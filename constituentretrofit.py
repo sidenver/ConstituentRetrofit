@@ -81,7 +81,10 @@ def readCommandLineInput(argv):
             raise Usage(help_message)
         else:
             if not setOutput:
-                outputFile = vectorsFile + '.cons'
+                if vectorsFile.endswith('.gz'):
+                    outputFile = '.'.join(vectorsFile.split('.')[:-1]) + '.cons.gz'
+                else:
+                    outputFile = vectorsFile + '.cons'
             return (vectorsFile, ontologyFile, outputFile, numIters, epsilon)
 
     except Usage, err:
