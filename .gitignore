@@ -1,0 +1,8 @@
+*.txt
+*.sense
+*.gz
+*.cons
+*.test
+*.train
+*.pyc
+*.DS_Store
