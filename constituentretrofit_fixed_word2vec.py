@@ -9,15 +9,17 @@ Licenced under the Apache Licence, v2.0 - http://www.apache.org/licenses/LICENSE
 import sys
 import getopt
 import numpy
-import gzip
+# import gzip
+import json
 
 from scipy.sparse import lil_matrix
-from copy import deepcopy
+# from copy import deepcopy
 from itertools import izip
+from gensim.models import word2vec
 
 
 help_message = '''
-$ python constituentretrofit_fixed.py -v <vectorsFile> [-o outputFile] [-n numIters] [-e epsilon] [-h]
+$ python constituentretrofit_fixed_word2vec.py -v <vectorsFile> [-o outputFile] [-n numIters] [-e epsilon] [-t numTestPhrases] [-h]
 -v or --vectors to specify path to the word vectors input file (gzip or txt files are acceptable)
 -o or --output to optionally set path to output word sense vectors file (<vectorsFile>.sense is used by default)
 -n or --numiters to optionally set the number of retrofitting iterations (10 is the default)
@@ -39,8 +41,8 @@ def readCommandLineInput(argv):
     try:
         try:
             # specify the possible option switches
-            opts, _ = getopt.getopt(argv[1:], "hv:o:n:e:", ["help", "vectors=",
-                                                            "output=", "numiters=", "epsilon="])
+            opts, _ = getopt.getopt(argv[1:], "hv:o:n:e:t:", ["help", "vectors=",
+                                                              "output=", "numiters=", "epsilon=", "numTestPhrases="])
         except getopt.error, msg:
             raise Usage(msg)
 
@@ -48,8 +50,9 @@ def readCommandLineInput(argv):
         vectorsFile = None
         ontologyFile = None  # not used
         outputFile = None
-        numIters = 10
+        numIters = 6
         epsilon = 0.001
+        numTestPhrases = 4600
 
         setOutput = False
         # option processing
@@ -74,6 +77,11 @@ def readCommandLineInput(argv):
                     epsilon = float(value)
                 except:
                     raise Usage(help_message)
+            elif option in ("-t", "--numTestPhrases"):
+                try:
+                    numTestPhrases = int(value)
+                except:
+                    raise Usage(help_message)
             else:
                 raise Usage(help_message)
 
@@ -82,7 +90,7 @@ def readCommandLineInput(argv):
         else:
             if not setOutput:
                 outputFile = vectorsFile + '.cons'
-            return (vectorsFile, ontologyFile, outputFile, numIters, epsilon)
+            return (vectorsFile, ontologyFile, outputFile, numIters, epsilon, numTestPhrases)
 
     except Usage, err:
         print str(err.msg)
@@ -93,27 +101,16 @@ def readCommandLineInput(argv):
 def readWordVectors(filename):
     sys.stderr.write('Reading vectors from file...\n')
 
-    if filename.endswith('.gz'):
-        fileObject = gzip.open(filename, 'r')
-    else:
-        fileObject = open(filename, 'r')
+    model = word2vec.Word2Vec.load_word2vec_format(filename, binary=True)
 
-    vectorDim = int(fileObject.readline().strip().split()[1])
-    vectors = numpy.loadtxt(filename, dtype=float, comments=None, skiprows=1, usecols=range(1, vectorDim+1))
+    vectorDim = len(model[model.vocab.iterkeys().next()])
+    wordVectors = model
     sys.stderr.write('Loaded vectors from file...\n')
 
-    wordVectors = {}
-    vocab = {}
-    lineNum = 0
-    for line in fileObject:
-        word = line.strip().split()[0]
-        vocab[word] = lineNum
-        wordVectors[word] = vectors[lineNum]
-        lineNum += 1
+    vocab = {word: model.vocab[word].index for word in model.vocab}
 
     sys.stderr.write('Finished reading vectors.\n')
 
-    fileObject.close()
     return vocab, wordVectors, vectorDim
 
 
@@ -121,17 +118,22 @@ def readWordVectors(filename):
 def writeWordVectors(wordVectors, vectorDim, filename):
     sys.stderr.write('Writing vectors to file...\n')
 
-    if filename.endswith('.gz'):
-        fileObject = gzip.open(filename, 'w')
-    else:
-        fileObject = open(filename, 'w')
-
-    fileObject.write(str(len(wordVectors.keys())) + ' ' + str(vectorDim) + '\n')
-    for word in wordVectors:
-        fileObject.write(word + ' ' + ' '.join(map(str, wordVectors[word])) + '\n')
-    fileObject.close()
+    wordVectors.save_word2vec_format(filename, binary=True)
 
     sys.stderr.write('Finished writing vectors.\n')
+
+
+def selectTestVocab(vocab, testNum=4600):
+    sys.stderr.write('generating test phrases...\n')
+    phrase = [word for word in vocab if '_' in word and
+              sum([1 for token in word.split('_') if token in vocab]) == len(word.split('_'))]
+    sys.stderr.write('possible test phrases count is ' + str(len(phrase)) + '.\n')
+    testVocab = numpy.random.choice(phrase, testNum, replace=False)
+    sys.stderr.write('test phrases count is ' + str(testNum) + '.\n')
+    fp = open('data/testVocab.json', 'w')
+    fp.write(json.dumps(testVocab.tolist(), sort_keys=True))
+    fp.close()
+    return set(testVocab)
 
 
 def lowercase(s):
@@ -142,12 +144,13 @@ def lowercase(s):
 
 
 # link constituent
-def linkConstituent(vocab, vocabLength):
+def linkConstituent(vocab, testVocab, vocabLength):
     missWordCount = 0
+    linksCount = 0
     sys.stderr.write('Building linkage between phrase and tokens...\n')
     constituentMatrix = lil_matrix((vocabLength, vocabLength))
     for word in vocab:
-        if '_' in word:
+        if '_' in word and word not in testVocab:
             buildLink = True
             phraseIndex = vocab[word]
             tokenList = word.split('_')
@@ -158,17 +161,17 @@ def linkConstituent(vocab, vocabLength):
                 # elif lowercase(token) in vocab:
                 #     tokenIndexList.append(vocab[lowercase(token)])
                 else:
-                    sys.stderr.write('Missing ' + token + '\n')
                     missWordCount += 1
                     buildLink = False
 
             if buildLink:
+                linksCount += 1
                 weightOfConstituent = 1.0/float(len(tokenIndexList)+1.0)
                 weightOfIdentity = 1
 
-                constituentMatrix[phraseIndex, phraseIndex] = weightOfIdentity
+                # constituentMatrix[phraseIndex, phraseIndex] = weightOfIdentity
                 for tokenIndex in tokenIndexList:
-                    constituentMatrix[phraseIndex, tokenIndex] = weightOfConstituent/2.0
+                    # constituentMatrix[phraseIndex, tokenIndex] = weightOfConstituent/2.0
                     constituentMatrix[tokenIndex, tokenIndex] = weightOfIdentity
                     for tokenIndex2 in tokenIndexList:
                         if not tokenIndex == tokenIndex2:
@@ -176,6 +179,7 @@ def linkConstituent(vocab, vocabLength):
                     constituentMatrix[tokenIndex, phraseIndex] = weightOfConstituent/2.0
     sys.stderr.write('Finished building linkage.\n')
     sys.stderr.write('missing ' + str(missWordCount) + ' words\n')
+    sys.stderr.write('built ' + str(linksCount) + ' links\n')
     return constituentMatrix.tocoo()
 
 
@@ -189,6 +193,11 @@ def maxVectorDiff(newVecs, oldVecs):
     return maxDiff
 
 
+def update(wordVectors, newSenseVectors):
+    for word in newSenseVectors:
+        numpy.put(wordVectors[word], range(len(newSenseVectors[word])), newSenseVectors[word])
+
+
 # Run the retrofitting procedure.
 def retrofit(wordVectors, vectorDim, vocab, constituentMatrix, numIters, epsilon):
     sys.stderr.write('Starting the retrofitting procedure...\n')
@@ -196,11 +205,10 @@ def retrofit(wordVectors, vectorDim, vocab, constituentMatrix, numIters, epsilon
     # map index to word/phrase
     senseVocab = {vocab[k]: k for k in vocab}
     # initialize sense vectors
-    newSenseVectors = {senseVocab[k]: wordVectors[senseVocab[k]]
-                       for k in senseVocab}
+    newSenseVectors = {}
 
-    # create a copy of the sense vectors to check for convergence
-    oldSenseVectors = deepcopy(newSenseVectors)
+    # old sense vectors to check for convergence
+    # oldSenseVectors = wordVectors
 
     # run for a maximum number of iterations
     for it in range(numIters):
@@ -229,6 +237,8 @@ def retrofit(wordVectors, vectorDim, vocab, constituentMatrix, numIters, epsilon
                     normalizer += val
                 # add the constituent vector
                 else:
+                    if senseVocab[col] not in newSenseVectors:
+                        newSenseVectors[senseVocab[col]] = wordVectors[senseVocab[col]]
                     newVector += val * newSenseVectors[senseVocab[col]]
                     if val >= 0:
                         normalizer += val/2
@@ -243,15 +253,17 @@ def retrofit(wordVectors, vectorDim, vocab, constituentMatrix, numIters, epsilon
             #         newVector += val * newSenseVectors[senseVocab[col]]
             #         normalizer += val
 
-        diffScore = maxVectorDiff(newSenseVectors, oldSenseVectors)
-        sys.stderr.write('Max vector differential is '+str(diffScore)+'\n')
-        if diffScore <= epsilon:
-            break
-        oldSenseVectors = deepcopy(newSenseVectors)
+        # diffScore = maxVectorDiff(newSenseVectors, oldSenseVectors)
+        # sys.stderr.write('Max vector differential is '+str(diffScore)+'\n')
+        sys.stderr.write('Done!\n')
+        # if diffScore <= epsilon:
+        #    break
+        # oldSenseVectors = deepcopy(newSenseVectors)
 
+    update(wordVectors, newSenseVectors)
     sys.stderr.write('Finished running retrofitting.\n')
 
-    return newSenseVectors
+    return wordVectors
 
 
 if __name__ == "__main__":
@@ -262,17 +274,18 @@ if __name__ == "__main__":
         sys.exit(2)
 
     # try opening the specified files
+    sys.stderr.write('number of test phrases is '+str(commandParse[5])+'\n')
 
     vocab, vectors, vectorDim = readWordVectors(commandParse[0])
     sys.stderr.write('vocab length is '+str(len(vocab.keys()))+'\n')
-    sys.stderr.write('vector length is '+str(len(vectors.keys()))+'\n')
+    testVocab = selectTestVocab(vocab, commandParse[5])
     # senseVocab, ontologyAdjacency = readOntology(commandParse[1], vectors)
-    constituentMatrix = linkConstituent(vocab, len(vocab.keys()))
+    constituentMatrix = linkConstituent(vocab, testVocab, len(vocab.keys()))
     numIters = commandParse[3]
     epsilon = commandParse[4]
 
     # run retrofitting and write to output file
-    writeWordVectors(retrofit(vectors, vectorDim, vocab, constituentMatrix, numIters, epsilon),
-                     vectorDim, commandParse[2])
+    vectors = retrofit(vectors, vectorDim, vocab, constituentMatrix, numIters, epsilon)
+    writeWordVectors(vectors, vectorDim, commandParse[2])
 
     sys.stderr.write('All done!\n')
