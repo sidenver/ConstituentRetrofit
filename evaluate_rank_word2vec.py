@@ -10,6 +10,8 @@ $ python evaluate_rank_word2vec.py -v <vectorsFile> [-o outputFile] [-h]
 -h or --help (this message is displayed)
 '''
 
+phraseSeperator = '|'
+
 
 class Usage(Exception):
     def __init__(self, msg):
@@ -57,8 +59,8 @@ def readCommandLineInput(argv):
 
 def selectTestVocab(vocab, testNum=4600):
     sys.stderr.write('generating test phrases...\n')
-    phrase = [word for word in vocab if '_' in word and
-              sum([1 for token in word.split('_') if token in vocab]) == len(word.split('_'))]
+    phrase = [word for word in vocab if phraseSeperator in word and
+              sum([1 for token in word.split(phraseSeperator) if token in vocab]) == len(word.split(phraseSeperator))]
     sys.stderr.write('possible test phrases count is ' + str(len(phrase)) + '.\n')
     return np.random.choice(phrase, testNum, replace=False)
 
@@ -89,7 +91,7 @@ def evaluate(testVocab, vocab, vectors):
     ranks = []
     sys.stderr.write('calculating ranks...\n')
     for trueWord in testVocab:
-        tokens = trueWord.split('_')
+        tokens = trueWord.split(phraseSeperator)
         # what if token is not found in vectors?
         estimateVec = normalize(sum([vectors[token] for token in tokens])/float(len(tokens)))
         cosineSimlarities = []
@@ -120,12 +122,12 @@ if __name__ == "__main__":
     # try opening the specified files
 
     vocab, vectors, vectorDim = consfit.readWordVectors(commandParse[0])
-    testVocab = selectTestVocab(vocab, 50000)
+    testVocab = selectTestVocab(vocab, 10000)
     medRank, mrr, perfect = evaluate(testVocab, vocab, vectors)
 
     sys.stderr.write('vocab length is '+str(len(vocab.keys()))+'\n')
     # sys.stderr.write('vector length is '+str(len(vectors.keys()))+'\n')
-    sys.stderr.write('phrase count is '+str(sum([1 for token in vocab if '_' in token]))+'\n')
+    sys.stderr.write('phrase count is '+str(sum([1 for token in vocab if phraseSeperator in token]))+'\n')
     sys.stderr.write('MedRank is '+str(100*medRank)+'\n')
     sys.stderr.write('MRR is '+str(100*mrr)+'\n')
     sys.stderr.write('Perfect is '+str(100*perfect)+'\n')

@@ -123,7 +123,7 @@ def selectTestVocab(vocab, testPhraseFile):
     sys.stderr.write('possible phrases count is ' + str(len(phrase)) + '.\n')
     with open(testPhraseFile, 'r') as fp:
         testPhrase = set(json.load(fp)) & phrase
-    sys.stderr.write('test phrases count is ' + len(testPhrase) + '.\n')
+    sys.stderr.write('test phrases count is ' + str(len(testPhrase)) + '.\n')
 
     return testPhrase
 
@@ -142,10 +142,10 @@ def linkConstituent(vocab, testVocab, vocabLength):
     sys.stderr.write('Building linkage between phrase and tokens...\n')
     constituentMatrix = lil_matrix((vocabLength, vocabLength))
     for word in vocab:
-        if '_' in word and word not in testVocab:
+        if phraseSeparator in word and word not in testVocab:
             buildLink = True
             phraseIndex = vocab[word]
-            tokenList = word.split('_')
+            tokenList = word.split(phraseSeparator)
             tokenIndexList = []
             for token in tokenList:
                 if token in vocab:
@@ -213,13 +213,13 @@ def retrofit(wordVectors, vectorDim, vocab, constituentMatrix, numIters, epsilon
         for row, col, val in izip(constituentMatrix.row, constituentMatrix.col, constituentMatrix.data):
             # a new sense has started
             if row != prevRow:
-                if prevRow and '_' not in senseVocab[prevRow]:
+                if prevRow and phraseSeparator not in senseVocab[prevRow]:
                     newSenseVectors[senseVocab[prevRow]] = newVector/normalizer
 
                 newVector = numpy.zeros(vectorDim, dtype=float)
                 normalizer = 0.0
                 prevRow = row
-                isPhrase = '_' in senseVocab[row]
+                isPhrase = phraseSeparator in senseVocab[row]
 
             # in the case that senseVocab[row] is not a phrase
             if not isPhrase:
