@@ -15,11 +15,15 @@ class MySentences(object):
         self.phrases = self.loadPhrase(phraseDir)
 
     def __iter__(self):
+	count = 0
         with tarfile.open(self.dirname, 'r:gz') as tar:
             for member in tar:
                 if member.isreg():
                     if member.name.split('.')[-1] == "possf2":
+			if count > 1:
+			    break
                         print 'processing ' + member.name + '...'
+			count = count + 1
                         f = tar.extractfile(member)
                         for line in f.readlines():
                             if len(line) > 2:
