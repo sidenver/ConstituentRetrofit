@@ -1,7 +1,6 @@
 import gensim
 import logging
 import re
-import tarfile
 import json
 import multiprocessing
 import os
@@ -16,7 +15,7 @@ class MySentences(object):
         self.phrases = self.loadPhrase(phraseDir)
 
     def __iter__(self):
-	for filename in os.listdir(dataPath):
+        for filename in os.listdir(dataPath):
             if filename.split('.')[-1] == "possf2":
                 print 'processing ' + filename + '...'
                 f = open(dataPath + filename, 'r')
