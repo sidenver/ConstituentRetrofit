@@ -16,7 +16,7 @@ from scipy.sparse import lil_matrix
 # from copy import deepcopy
 from itertools import izip
 from gensim.models import word2vec
-
+import re
 
 help_message = '''
 $ python constituentretrofit_fixed_word2vec_native.py -v <vectorsFile> -t <testPhrases> [-o outputFile] [-n numIters] [-e epsilon] [-h]
@@ -122,7 +122,8 @@ def selectTestVocab(vocab, testPhraseFile):
                   len(word.split(phraseSeparator))])
     sys.stderr.write('possible phrases count is ' + str(len(phrase)) + '.\n')
     with open(testPhraseFile, 'r') as fp:
-        testPhrase = set(json.load(fp)) & phrase
+        testph = json.load(fp)
+        testPhrase = set([re.sub(' ', '|', ph) for ph in testph]) & phrase
     sys.stderr.write('test phrases count is ' + str(len(testPhrase)) + '.\n')
 
     return testPhrase
