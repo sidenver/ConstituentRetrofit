@@ -27,18 +27,14 @@ testNum = 100000
 mostcommonPhrase = phraseCount.most_common(mostcommon)
 
 trainPhrase = open(phraseDir + 'trainPhrase', 'w')
-trainList = [phrase[0] for phrase in mostcommon[:trainNum]]
+trainList = [phrase[0] for phrase in mostcommonPhrase[:trainNum]]
 trainPhrase.write(json.dumps(trainList))
 trainPhrase.close()
 
 testPhrase = open(phraseDir + 'testPhrase', 'w')
-testList = [phrase[0] for phrase in mostcommon[trainNum:]]
+testList = [phrase[0] for phrase in mostcommonPhrase[trainNum:]]
 randomPhrase = np.random.choice(testList, testNum, replace=False)
 testPhrase.write(json.dumps(randomPhrase.tolist()))
 testPhrase.close()
 
 print "phrase count is " + str(len(phraseCount)) + "."
-
-allPhrase = open('data/allPhrase.txt', 'w')
-allPhrase.write(json.dumps(phraseCount))
-allPhrase.close()
