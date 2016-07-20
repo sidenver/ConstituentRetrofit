@@ -30,7 +30,7 @@ class MySentences(object):
             return matchobj.group(0)
 
     def word2phrase(self, content):
-        return re.sub(r'([-\w]+_J\w+ [-\w]+_N\w+)', self.repl, content)
+        return re.sub(r"([-.,'@:\\/\w]+_J\w+ [-.,'@:\\/\w]+_N\w+)", self.repl, content)
 
     def loadPhrase(self, phraseDir):
         phrase = []

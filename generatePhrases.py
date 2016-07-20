@@ -1,38 +1,38 @@
 import re
 from collections import Counter
-import tarfile
 import json
 import numpy as np
+import os
 
-dataPath = "data/umbc_webbase_corpus.tar.gz"
-
-tar = tarfile.open(dataPath, 'r:gz')
+dataPath = "/fs/clip-scratch/shing/webbase_all/"
+phraseDir = "/fs/clip-scratch/shing/"
 
 phraseCount = Counter()
 
-for member in tar:
-    if member.isreg():
-        if member.name.split('.')[-1] == "possf2":
-            print 'processing ' + member.name + '...'
-            f = tar.extractfile(member)
+for filename in os.listdir(dataPath):
+    if filename.split('.')[-1] == "possf2":
+        print 'processing ' + filename + '...'
+        with open(dataPath + filename, 'r') as f:
             content = f.read()
-            match = re.findall(r'([-\w]+_J\w+ [-\w]+_N\w+)', content)
+            match = re.findall(r"([-.,'@:\\/\w]+_J\w+ [-.,'@:\\/\w]+_N\w+)", content)
             phraseCount.update(match)
 
-tar.close()
 
 print phraseCount.most_common(20)
 
-trainNum = 1000000
+mostcommon = 1000000
+trainNum = 200000
 testNum = 100000
 
-trainPhrase = open('data/trainPhrase.txt', 'w')
-trainList = [phrase[0] for phrase in phraseCount.most_common(trainNum)]
+mostcommonPhrase = phraseCount.most_common(mostcommon)
+
+trainPhrase = open(phraseDir + 'trainPhrase', 'w')
+trainList = [phrase[0] for phrase in mostcommon[:trainNum]]
 trainPhrase.write(json.dumps(trainList))
 trainPhrase.close()
 
-testPhrase = open('data/testPhrase.txt', 'w')
-testList = [phrase[0] for phrase in phraseCount.most_common()[trainNum:]]
+testPhrase = open(phraseDir + 'testPhrase', 'w')
+testList = [phrase[0] for phrase in mostcommon[trainNum:]]
 randomPhrase = np.random.choice(testList, testNum, replace=False)
 testPhrase.write(json.dumps(randomPhrase.tolist()))
 testPhrase.close()
