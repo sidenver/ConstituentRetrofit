@@ -10,9 +10,11 @@ phraseDir = "/fs/clip-scratch/shing/"
 
 
 class MySentences(object):
-    def __init__(self, dirname, phraseDir):
+    def __init__(self, dirname, phraseDir, concatenate=True):
         self.dirname = dirname
-        self.phrases = self.loadPhrase(phraseDir)
+        self.concatenate = concatenate
+        if self.concatenate:
+            self.phrases = self.loadPhrase(phraseDir)
 
     def __iter__(self):
         for filename in os.listdir(dataPath):
@@ -21,7 +23,10 @@ class MySentences(object):
                 f = open(dataPath + filename, 'r')
                 for line in f.readlines():
                     if len(line) > 2:
-                        yield self.word2phrase(line).split(' ')
+                        if self.concatenate:
+                            yield self.word2phrase(line).split(' ')
+                        else:
+                            yield line.split(' ')
 
     def repl(self, matchobj):
         if matchobj.group(0) in self.phrases:
@@ -42,6 +47,6 @@ class MySentences(object):
 
 if __name__ == '__main__':
     logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
-    sentences = MySentences(dataPath, phraseDir)  # a memory-friendly iterator
+    sentences = MySentences(dataPath, phraseDir, concatenate=False)  # a memory-friendly iterator
     model = gensim.models.Word2Vec(sentences, size=300, min_count=5, window=5, workers=multiprocessing.cpu_count())
-    model.save('output/mymodel')
+    model.save('output/wordOnly')
