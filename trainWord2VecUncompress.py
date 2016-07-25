@@ -56,4 +56,4 @@ if __name__ == '__main__':
     myDirList = np.random.shuffle(os.listdir(dataPath))
     sentences = MySentences(dataPath, phraseDir, concatenate=False, dirList=myDirList)  # a memory-friendly iterator
     model = gensim.models.Word2Vec(sentences, size=300, min_count=5, window=5, workers=multiprocessing.cpu_count())
-    model.save(savePath + 'wordOnly')
+    model.save(savePath + 'wordOnly2')
