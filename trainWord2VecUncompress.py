@@ -4,7 +4,7 @@ import re
 import json
 import multiprocessing
 import os
-import np
+import numpy as np
 
 dataPath = "/fs/clip-scratch/shing/webbase_all/"
 phraseDir = "/fs/clip-scratch/shing/"
