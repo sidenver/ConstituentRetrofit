@@ -7,6 +7,7 @@ import os
 
 dataPath = "/fs/clip-scratch/shing/webbase_all/"
 phraseDir = "/fs/clip-scratch/shing/"
+savePath = "/fs/clip-scratch/shing/output/"
 
 
 class MySentences(object):
@@ -49,4 +50,4 @@ if __name__ == '__main__':
     logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
     sentences = MySentences(dataPath, phraseDir, concatenate=False)  # a memory-friendly iterator
     model = gensim.models.Word2Vec(sentences, size=300, min_count=5, window=5, workers=multiprocessing.cpu_count())
-    model.save('output/wordOnly')
+    model.save(savePath + 'wordOnly')
