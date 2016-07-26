@@ -19,8 +19,8 @@ if __name__ == '__main__':
     wordVocab = set([word for word in modelWord.vocab])
     mutualVocab = phraseVocab & wordVocab
 
-    print 'phrase num: ' + str(len(phraseVocab))
-    print 'word num: ' + str(len(wordVocab))
+    print sys.argv[1] + ' num: ' + str(len(wordVocab))
+    print sys.argv[2] + ' num: ' + str(len(phraseVocab))
     print 'mutual num: ' + str(len(mutualVocab))
 
     euclidian = {word: np.linalg.norm(modelPhrase[word]-modelWord[word]) for word in mutualVocab}
