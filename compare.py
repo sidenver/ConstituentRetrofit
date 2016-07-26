@@ -12,7 +12,7 @@ def normalize(v):
     return v/norm
 
 if __name__ == '__main__':
-    modelPhrase = word2vec.Word2Vec.load(savePath + 'wordOnly2')
+    modelPhrase = word2vec.Word2Vec.load(savePath + 'wordOnly3')
     modelWord = word2vec.Word2Vec.load(savePath + 'wordOnly')
 
     phraseVocab = set([word for word in modelPhrase.vocab])
