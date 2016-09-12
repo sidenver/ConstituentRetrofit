@@ -12,6 +12,7 @@ $ python untag.py -v <vectorsFile> [-f filterFile] [-o outputFile] [-h]
 -o or --output to optionally set path to output untagged word vectors txt file
 -h or --help (this message is displayed)
 '''
+
 phraseSeparator = '|'
 tagSeparator = '_'
 
