@@ -1,5 +1,6 @@
-import constituentretrofit_fixed_word2vec_native as consfit
-import constituentretrofit_fixed_word2vec as consfit_ori
+# import constituentretrofit_fixed_word2vec_native as consfit
+# import constituentretrofit_fixed_word2vec as consfit_ori
+import constituentretrofit as consfit
 import sys
 import getopt
 import numpy as np
@@ -14,8 +15,8 @@ $ python untag.py -v <vectorsFile> [-f filterFile] [-o outputFile] [-h]
 -h or --help (this message is displayed)
 '''
 
-phraseSeparator = '|'
-tagSeparator = '_'
+phraseSeparator = '_'
+tagSeparator = '/'
 
 
 class Usage(Exception):
@@ -77,7 +78,7 @@ def untag(vocabs):
     untagVocab = {}
     for tagVocab in vocabs:
         if phraseSeparator not in tagVocab:
-            vocab = tagVocab.split('_')[0]
+            vocab = tagVocab.split(tagSeparator)[0]
             if vocab in untagVocab:
                 untagVocab[vocab].append(tagVocab)
             else:
@@ -117,7 +118,7 @@ if __name__ == '__main__':
     if commandParse == 2:
         sys.exit(2)
 
-    vocab, vectors, vectorDim = consfit_ori.readWordVectors(commandParse[0])
+    vocab, vectors, vectorDim = consfit.readWordVectors(commandParse[0])
     # vocab is {word: frequency rank}
     # vectors is {word: vector}
     sys.stderr.write('vocab length is '+str(len(vocab.keys()))+'\n')
