@@ -2,12 +2,14 @@ import constituentretrofit_fixed_word2vec_native as consfit
 import sys
 import getopt
 import numpy as np
+import re
 
 # take a POS tagged word2vec format file and turn it into a txt file
 help_message = '''
-$ python untag.py -v <vectorsFile> [-o outputFile] [-h]
--v or --vectors to specify path to the word vectors input file (gzip or txt files are acceptable)
--o or --output to optionally set path to output word sense vectors file (<vectorsFile>.sense is used by default)
+$ python untag.py -v <vectorsFile> [-f filterFile] [-o outputFile] [-h]
+-v or --vectors to specify path to the word2vectors input file
+-f or --filter to optionally set path to filter word vectors txt file
+-o or --output to optionally set path to output untagged word vectors txt file
 -h or --help (this message is displayed)
 '''
 phraseSeparator = '|'
@@ -24,13 +26,14 @@ def readCommandLineInput(argv):
     try:
         try:
             # specify the possible option switches
-            opts, _ = getopt.getopt(argv[1:], "hv:o:", ["help", "vectors=", "output="])
+            opts, _ = getopt.getopt(argv[1:], "hv:f:o:", ["help", "vectors=", "filter=", "output="])
         except getopt.error, msg:
             raise Usage(msg)
 
         # default values
         vectorsFile = None
         outputFile = None
+        filterFile = None
 
         setOutput = False
         # option processing
@@ -39,6 +42,8 @@ def readCommandLineInput(argv):
                 raise Usage(help_message)
             elif option in ("-v", "--vectors"):
                 vectorsFile = value
+            elif option in ("-f", "--filter"):
+                filterFile = value
             elif option in ("-o", "--output"):
                 outputFile = value
                 setOutput = True
@@ -50,11 +55,19 @@ def readCommandLineInput(argv):
         else:
             if not setOutput:
                 outputFile = vectorsFile + '.txt'
-            return (vectorsFile, outputFile)
+            return (vectorsFile, outputFile, filterFile)
 
     except Usage, err:
         print str(err.msg)
         return 2
+
+
+def readInFilterFile(filterFile):
+    filterSet = set()
+    with open(filterFile, 'r') as f:
+        for line in f:
+            filterSet.add(line.rstrip('\n'))
+    return filterSet
 
 
 def untag(vocabs):
@@ -69,16 +82,17 @@ def untag(vocabs):
     return untagVocab
 
 
-def untagWithVectors(untagDict, vocab, vectors):
+def untagWithVectors(untagDict, vocab, vectors, filterSet=None):
     untagVectors = {}
     for untagVocab in untagDict:
-        if len(untagDict[untagVocab]) > 1:
-            def getFreqOfVocab(x):
-                vocab[x]
-            mostFreqVocab = min(untagDict[untagVocab], key=getFreqOfVocab)
-            untagVectors[untagVocab] = vectors[mostFreqVocab]
-        else:
-            untagVectors[untagVocab] = vectors[untagDict[untagVocab][0]]
+        if filterSet is None or untagVocab in filterSet:
+            if len(untagDict[untagVocab]) > 1:
+                def getFreqOfVocab(x):
+                    vocab[x]
+                mostFreqVocab = min(untagDict[untagVocab], key=getFreqOfVocab)
+                untagVectors[untagVocab] = vectors[mostFreqVocab]
+            else:
+                untagVectors[untagVocab] = vectors[untagDict[untagVocab][0]]
     return untagVectors
 
 
@@ -88,9 +102,10 @@ def writeWordVectors(vectors, vectorDim, outputFile):
         for vocab in vectors:
             output.write(vocab)
             npVec = vectors[vocab]
-            vecStr = np.array2string(npVec, max_line_width='infty', precision=6)
-            vecStr = vecStr.replace('  ', ' ')
-            output.write(vecStr[1:-1])
+            vecStr = np.array2string(npVec, max_line_width='infty', precision=6, suppress=True)
+            vecStr = vecStr.replace('[', ' ')
+            vecStr = re.sub(r' +', ' ', vecStr)
+            output.write(vecStr[:-1])
             output.write('\n')
 
 if __name__ == '__main__':
@@ -102,9 +117,12 @@ if __name__ == '__main__':
     # vocab is {word: frequency rank}
     # vectors is {word: vector}
     sys.stderr.write('vocab length is '+str(len(vocab.keys()))+'\n')
+    filterSet = None
+    if commandParse[2]:
+        filterSet = readInFilterFile(commandParse[2])
     untagDict = untag(vocab)
     # untag and write to output file
-    untagVectors = untagWithVectors(untagDict, vocab, vectors)
+    untagVectors = untagWithVectors(untagDict, vocab, vectors, filterSet)
     writeWordVectors(untagVectors, vectorDim, commandParse[1])
 
     sys.stderr.write('All done!\n')
