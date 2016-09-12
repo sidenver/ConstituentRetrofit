@@ -72,6 +72,7 @@ def readInFilterFile(filterFile):
 
 
 def untag(vocabs):
+    sys.stderr.write('Untagging vec\n')
     untagVocab = {}
     for tagVocab in vocabs:
         if phraseSeparator not in tagVocab:
@@ -94,6 +95,7 @@ def untagWithVectors(untagDict, vocab, vectors, filterSet=None):
                 untagVectors[untagVocab] = vectors[mostFreqVocab]
             else:
                 untagVectors[untagVocab] = vectors[untagDict[untagVocab][0]]
+    sys.stderr.write('Untagged!\n')
     return untagVectors
 
 
@@ -103,7 +105,7 @@ def writeWordVectors(vectors, vectorDim, outputFile):
         for vocab in vectors:
             output.write(vocab)
             npVec = vectors[vocab]
-            vecStr = np.array2string(npVec, max_line_width='infty', precision=6, suppress=True)
+            vecStr = np.array2string(npVec, max_line_width='infty', precision=6, suppress_small=True)
             vecStr = vecStr.replace('[', ' ')
             vecStr = re.sub(r' +', ' ', vecStr)
             output.write(vecStr[:-1])
