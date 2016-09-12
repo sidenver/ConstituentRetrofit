@@ -1,6 +1,6 @@
 # import constituentretrofit_fixed_word2vec_native as consfit
-# import constituentretrofit_fixed_word2vec as consfit_ori
-import constituentretrofit as consfit
+import constituentretrofit_fixed_word2vec as consfit
+# import constituentretrofit as consfit
 import sys
 import getopt
 import numpy as np
