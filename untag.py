@@ -1,68 +1,29 @@
-# import constituentretrofit_fixed_word2vec_native as consfit
-import constituentretrofit_fixed_word2vec as consfit
-# import constituentretrofit as consfit
+"""Usage:
+    untag.py -v <vectorsFile> [options]
+    untag.py -h | --help
+
+take a POS tagged word2vec format file and turn it into a txt file
+
+Options:
+-h --help                  show this message
+-f, --filter=FILTERFILE    optionally set path to filter word vectors txt file
+-o, --output=OUTPUTFILE    optionally set path to output untagged word vectors txt file
+--phrase=SEPARATOR         phrase separator, default '_'
+--tag=SEPARATOR            tag separator, default '/'
+--gensim                   the default, read in gensim word2vec file
+--binary                   read in native bainary word2vec file
+--txt                      read in txt format word2vec file
+
+"""
+
 import sys
-import getopt
 import numpy as np
 import re
+from docopt import docopt
 
-# take a POS tagged word2vec format file and turn it into a txt file
-help_message = '''
-$ python untag.py -v <vectorsFile> [-f filterFile] [-o outputFile] [-h]
--v or --vectors to specify path to the word2vectors input file
--f or --filter to optionally set path to filter word vectors txt file
--o or --output to optionally set path to output untagged word vectors txt file
--h or --help (this message is displayed)
-'''
 
 phraseSeparator = '_'
 tagSeparator = '/'
-
-
-class Usage(Exception):
-    def __init__(self, msg):
-        self.msg = msg
-
-
-# Read command line arguments
-def readCommandLineInput(argv):
-    try:
-        try:
-            # specify the possible option switches
-            opts, _ = getopt.getopt(argv[1:], "hv:f:o:", ["help", "vectors=", "filter=", "output="])
-        except getopt.error, msg:
-            raise Usage(msg)
-
-        # default values
-        vectorsFile = None
-        outputFile = None
-        filterFile = None
-
-        setOutput = False
-        # option processing
-        for option, value in opts:
-            if option in ("-h", "--help"):
-                raise Usage(help_message)
-            elif option in ("-v", "--vectors"):
-                vectorsFile = value
-            elif option in ("-f", "--filter"):
-                filterFile = value
-            elif option in ("-o", "--output"):
-                outputFile = value
-                setOutput = True
-            else:
-                raise Usage(help_message)
-
-        if (vectorsFile is None):
-            raise Usage(help_message)
-        else:
-            if not setOutput:
-                outputFile = vectorsFile + '.txt'
-            return (vectorsFile, outputFile, filterFile)
-
-    except Usage, err:
-        print str(err.msg)
-        return 2
 
 
 def readInFilterFile(filterFile):
@@ -113,21 +74,44 @@ def writeWordVectors(vectors, vectorDim, outputFile):
             output.write(vecStr[:-1])
             output.write('\n')
 
-if __name__ == '__main__':
-    commandParse = readCommandLineInput(sys.argv)
-    if commandParse == 2:
-        sys.exit(2)
 
-    vocab, vectors, vectorDim = consfit.readWordVectors(commandParse[0])
+def setUp(commandParse):
+    if not commandParse['--output']:
+        outputFile = commandParse['<vectorsFile>'] + '.txt'
+    else:
+        outputFile = commandParse['--output']
+
+    if commandParse['--txt']:
+        import constituentretrofit_fixed as consfit
+    elif commandParse['--binary']:
+        import constituentretrofit_fixed_word2vec as consfit
+    else:
+        # the default --gensim format
+        import constituentretrofit_fixed_word2vec_native as consfit
+
+    if commandParse['--phrase']:
+        global phraseSeparator
+        phraseSeparator = commandParse['--phrase']
+    if commandParse['--tag']:
+        global tagSeparator
+        tagSeparator = commandParse['--tag']
+    return outputFile, consfit
+
+if __name__ == '__main__':
+    commandParse = docopt(__doc__)
+    # print commandParse
+    outputFile, consfit = setUp(commandParse)
+
+    vocab, vectors, vectorDim = consfit.readWordVectors(commandParse['<vectorsFile>'])
     # vocab is {word: frequency rank}
     # vectors is {word: vector}
     sys.stderr.write('vocab length is '+str(len(vocab.keys()))+'\n')
     filterSet = None
-    if commandParse[2]:
-        filterSet = readInFilterFile(commandParse[2])
+    if commandParse['--filter']:
+        filterSet = readInFilterFile(commandParse['--filter'])
     untagDict = untag(vocab)
     # untag and write to output file
     untagVectors = untagWithVectors(untagDict, vocab, vectors, filterSet)
-    writeWordVectors(untagVectors, vectorDim, commandParse[1])
+    writeWordVectors(untagVectors, vectorDim, outputFile)
 
     sys.stderr.write('All done!\n')
