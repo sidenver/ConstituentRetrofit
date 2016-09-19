@@ -1,15 +1,18 @@
 from gensim.models import word2vec
 import numpy as np
+from scipy import linalg, stats
 import sys
 
 savePath = "/fs/clip-scratch/shing/output/"
 
 
-def normalize(v):
-    norm = np.linalg.norm(v)
-    if norm == 0:
-        return v
-    return v/norm
+def cos(vec1, vec2):
+        return vec1.dot(vec2)/(linalg.norm(vec1)*linalg.norm(vec2))
+
+
+def rho(vec1, vec2):
+        return stats.stats.spearmanr(vec1, vec2)
+
 
 if __name__ == '__main__':
     modelWord = word2vec.Word2Vec.load(savePath + sys.argv[1])
@@ -23,47 +26,10 @@ if __name__ == '__main__':
     print sys.argv[2] + ' num: ' + str(len(phraseVocab))
     print 'mutual num: ' + str(len(mutualVocab))
 
-    euclidian = {word: np.linalg.norm(modelPhrase[word]-modelWord[word]) for word in mutualVocab}
-    normalizeWordVec = {word: normalize(modelWord[word]) for word in mutualVocab}
-    normalizePhraseVec = {word: normalize(modelPhrase[word]) for word in mutualVocab}
-    cosinceSim = {word: np.dot(normalizeWordVec[word], normalizePhraseVec[word]) for word in mutualVocab}
+    pairsToCompare = [np.random.choice(mutualVocab, 2, replace=False) for i in range(3000)]
+    scoreWord = [cos(modelWord[pair[0]], modelWord[pair[1]]) for pair in pairsToCompare]
+    scorePhrase = [cos(modelPhrase[pair[0]], modelPhrase[pair[1]]) for pair in pairsToCompare]
 
-    print '\nEuclidian:'
-    print 'Average: ' + str(np.average(euclidian.values()))
-    print 'STD: ' + str(np.std(euclidian.values()))
-    print 'Max: ' + str(np.amax(euclidian.values()))
-    print 'Argmax: ' + max(euclidian, key=euclidian.get)
-
-    print '\nCosine:'
-    print 'Average: ' + str(np.average(cosinceSim.values()))
-    print 'STD: ' + str(np.std(cosinceSim.values()))
-    print 'Max: ' + str(np.amax(cosinceSim.values()))
-    print 'Argmax: ' + max(cosinceSim, key=cosinceSim.get)
-
-    euclidian2 = [np.linalg.norm(modelWord[word1]-modelWord[word2]) for word1 in mutualVocab for word2 in mutualVocab]
-    cosinceSim2 = [np.dot(normalizeWordVec[word1], normalizeWordVec[word2]) for word1 in mutualVocab for word2 in mutualVocab]
-
-    print '\n\nWithin Words:'
-    print 'Euclidian:'
-    print 'Average: ' + str(np.average(euclidian2))
-    print 'STD: ' + str(np.std(euclidian2))
-    print 'Max: ' + str(np.amax(euclidian2))
-
-    print 'Cosine:'
-    print 'Average: ' + str(np.average(cosinceSim2))
-    print 'STD: ' + str(np.std(cosinceSim2))
-    print 'Max: ' + str(np.amax(cosinceSim2))
-
-    euclidian2 = [np.linalg.norm(modelPhrase[word1]-modelPhrase[word2]) for word1 in mutualVocab for word2 in mutualVocab]
-    cosinceSim2 = [np.dot(normalizePhraseVec[word1], normalizePhraseVec[word2]) for word1 in mutualVocab for word2 in mutualVocab]
-
-    print '\nWithin Phrases:'
-    print 'Euclidian:'
-    print 'Average: ' + str(np.average(euclidian2))
-    print 'STD: ' + str(np.std(euclidian2))
-    print 'Max: ' + str(np.amax(euclidian2))
-
-    print 'Cosine:'
-    print 'Average: ' + str(np.average(cosinceSim2))
-    print 'STD: ' + str(np.std(cosinceSim2))
-    print 'Max: ' + str(np.amax(cosinceSim2))
+    rhoScore = rho(scoreWord, scorePhrase)
+    print 'rho is: ', rhoScore[0]
+    print 'p value is: ', rhoScore[1]
