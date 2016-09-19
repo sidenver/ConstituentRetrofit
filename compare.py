@@ -26,7 +26,7 @@ if __name__ == '__main__':
     print sys.argv[2] + ' num: ' + str(len(phraseVocab))
     print 'mutual num: ' + str(len(mutualVocab))
 
-    pairsToCompare = [np.random.choice(mutualVocab, 2, replace=False) for i in range(3000)]
+    pairsToCompare = [np.random.choice(list(mutualVocab), 2, replace=False) for i in range(3000)]
     scoreWord = [cos(modelWord[pair[0]], modelWord[pair[1]]) for pair in pairsToCompare]
     scorePhrase = [cos(modelPhrase[pair[0]], modelPhrase[pair[1]]) for pair in pairsToCompare]
 
