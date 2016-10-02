@@ -1,6 +1,13 @@
+"""Usage:
+    wordsim.py -v <vectorsFile>
+    wordsim.py -h | --help
+
+take a word embedding file and evaluate it with word similarity task using spearman rho
+
+"""
 import os
 import logging
-import argparse
+from docopt import docopt
 import numpy
 from collections import defaultdict
 from scipy import linalg, stats
@@ -68,11 +75,8 @@ class Wordsim:
         return result
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--lang', '-l', default="en")
-    parser.add_argument('--vector', '-v', default="")
-    args = parser.parse_args()
-    wordsim = Wordsim(args.lang)
-    word2vec = wordsim.load_vector(args.vector)
+    commandParse = docopt(__doc__)
+    wordsim = Wordsim('en')
+    word2vec = wordsim.load_vector(commandParse['<vectorsFile>'])
     result = wordsim.evaluate(word2vec)
     wordsim.pprint(result)
