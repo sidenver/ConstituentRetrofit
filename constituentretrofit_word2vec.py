@@ -8,10 +8,10 @@ Arguments:
 Options:
 -t <testPhrase>              specify test phrases to leave out
 -o <outputFile>              set output word sense vectors file (<vectorsFile>.sense)
--n <numiters>                set the number of retrofitting iterations [default: 8 ]
--e <epsilon>                 set the convergence threshold [default: 0.001 ]
---phrase <phraseSeparator>   phrase separator [default: | ]
--f <inputFormat>             can be set to gensim, binary, or txt [default: gensim ]
+-n <numiters>                set the number of retrofitting iterations [default: 8]
+-e <epsilon>                 set the convergence threshold [default: 0.001]
+--phrase <phraseSeparator>   phrase separator [default: |]
+-f <inputFormat>             can be set to gensim, binary, or txt [default: gensim]
 -h --help                    (this message is displayed)
 
 Copyright (C) 2015 Sujay Kumar Jauhar <sjauhar@cs.cmu.edu>
