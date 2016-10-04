@@ -38,7 +38,7 @@ phraseSeparator = '|'
 def writeWordVectors(wordVectors, vectorDim, filename):
     sys.stderr.write('Writing vectors to file...\n')
 
-    wordVectors.save_word2vec_format(filename, binary=True)
+    wordVectors.save(filename)
 
     sys.stderr.write('Finished writing vectors.\n')
 
