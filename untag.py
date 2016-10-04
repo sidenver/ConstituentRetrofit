@@ -99,7 +99,7 @@ def setUp(commandParse):
 
 if __name__ == '__main__':
     commandParse = docopt(__doc__)
-    print commandParse
+    # print commandParse
     outputFile, consfit = setUp(commandParse)
 
     vocab, vectors, vectorDim = consfit.readWordVectors(commandParse['<vectorsFile>'])
