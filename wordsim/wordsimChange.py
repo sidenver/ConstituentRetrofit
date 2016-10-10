@@ -61,7 +61,7 @@ class WordsimChange:
             detail.align["Word1"] = "l"
             detail.align["Word2"] = "l"
             for dif in mostDifferent[:n_max]:
-                detail.add_row([dif[0][0], dif[0][1], dif[1], dif[3], dif[4], (dif[1]-dif[2])-(dif[3]-dif[4])])
+                detail.add_row([dif[0][0], dif[0][1], dif[1], dif[3], dif[4], abs(dif[1]-dif[2])-abs(dif[3]-dif[4])])
             print detail
 
     @staticmethod
@@ -84,7 +84,7 @@ class WordsimChange:
         label1 = [wordPair[1] for wordPair in wordPairsRank1]
         pred2 = [wordPair[0] for wordPair in wordPairsRank2]
         label2 = [wordPair[1] for wordPair in wordPairsRank2]
-        return sorted(zip(wordPairs, pred1, label1, pred2, label2), key=lambda x: abs((x[1]-x[2])-(x[3]-x[4])), reverse=True)
+        return sorted(zip(wordPairs, pred1, label1, pred2, label2), key=lambda x: abs(abs(x[1]-x[2])-abs(x[3]-x[4])), reverse=True)
 
     def evaluate(self, word_dict, vect_name=None):
         result = {}
