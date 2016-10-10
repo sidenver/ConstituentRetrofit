@@ -84,7 +84,7 @@ class WordsimChange:
         label1 = [wordPair[1] for wordPair in wordPairsRank1]
         pred2 = [wordPair[0] for wordPair in wordPairsRank2]
         label2 = [wordPair[1] for wordPair in wordPairsRank2]
-        return sorted(zip(wordPairs, pred1, label1, pred2, label2), key=lambda x: abs(abs(x[1]-x[2])-abs(x[3]-x[4])), reverse=True)
+        return sorted(zip(wordPairs, pred1, label1, pred2, label2), key=lambda x: (abs(x[1]-x[2])-abs(x[3]-x[4])), reverse=True)
 
     def evaluate(self, word_dict, vect_name=None):
         result = {}
