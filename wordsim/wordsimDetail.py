@@ -20,7 +20,7 @@ class WordsimDetail:
         logging.info("collecting datasets ..")
         self.dataset = defaultdict(list)
         for line in open(dataset):
-            self.dataset[dataset.split('.')[0]].append([float(w) if i == 2 else w for i, w in enumerate(line.strip().split())])
+            self.dataset[dataset.split('/')[-1].split('.')[0]].append([float(w) if i == 2 else w for i, w in enumerate(line.strip().split())])
 
     @staticmethod
     def cos(vec1, vec2):
@@ -104,4 +104,4 @@ if __name__ == "__main__":
     wordsim = WordsimDetail(commandParse['<dataset>'])
     word2vec = wordsim.load_vector(commandParse['<vectorsFile>'])
     result, mostDifferent = wordsim.evaluate(word2vec)
-    wordsim.pprint(result, mostDifferent, commandParse['<number>'])
+    wordsim.pprint(result, mostDifferent, int(commandParse['<number>']))
