@@ -57,11 +57,11 @@ class WordsimChange:
         print x
 
         if n_max:
-            detail = PrettyTable(["Word1", "Word2", "Pred1", "Label1", "Pred2", "Label2", "Diff"])
+            detail = PrettyTable(["Word1", "Word2", "PredCon", "PredOri", "Label", "Diff"])
             detail.align["Word1"] = "l"
             detail.align["Word2"] = "l"
             for dif in mostDifferent[:n_max]:
-                detail.add_row([dif[0][0], dif[0][1], dif[1], dif[2], dif[3], dif[4], (dif[1]-dif[2])-(dif[3]-dif[4])])
+                detail.add_row([dif[0][0], dif[0][1], dif[1], dif[3], dif[4], (dif[1]-dif[2])-(dif[3]-dif[4])])
             print detail
 
     @staticmethod
