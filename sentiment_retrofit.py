@@ -64,11 +64,11 @@ class SentimentRetrofit(object):
         return bow
 
     def initalVal(self):
-        return (np.zeros(self.dim + 1), np.zeros(len(self.word2indx), self.dim))
+        return np.zeros(self.dim + 1 + len(self.word2indx) * self.dim)
 
     def objectiveSentimentRetrofit(self, param):
-        phi = param[0]
-        retroVec = param[1]
+        phi = param[:self.dim + 1]
+        retroVec = param[self.dim + 1:].reshape((len(self.word2indx), self.dim))
         # {name: (pos or neg, {word_index: freq)}
         score = 0.0
         for document in self.docummentDict:
@@ -91,7 +91,7 @@ class SentimentRetrofit(object):
                                                     fprime=grad(self.objectiveSentimentRetrofit),
                                                     pgtol=1e-3, disp=True)
         print 'minimization done.'
-        newVec = self.optimLBFGS[0][1]
+        newVec = self.optimLBFGS[0][self.dim + 1:].reshape((len(self.word2indx), self.dim))
         self.newVectors = {}
         indx2word = {self.word2indx[word]: word for word in self.word2indx}
         for indx in range(len(self.word2indx)):
