@@ -64,11 +64,11 @@ class SentimentRetrofit(object):
         return bow
 
     def initalVal(self):
-        return np.zeros(self.dim + 1 + len(self.word2indx) * self.dim)
+        return (np.zeros(self.dim + 1), np.zeros(len(self.word2indx), self.dim))
 
     def objectiveSentimentRetrofit(self, param):
-        phi = param[:self.dim + 1]
-        retroVec = param[self.dim + 1:].reshape((len(self.word2indx), self.dim))
+        phi = param[0]
+        retroVec = param[1]
         # {name: (pos or neg, {word_index: freq)}
         score = 0.0
         for document in self.docummentDict:
