@@ -1,5 +1,6 @@
 # load required libraries
-import numpy as np
+import autograd.numpy as np
+from autograd import grad
 from numpy import linalg as la
 import scipy as sp
 import scipy.optimize
@@ -87,7 +88,7 @@ class SentimentRetrofit(object):
         print 'Start minimization...'
         self.optimLBFGS = sp.optimize.fmin_l_bfgs_b(self.objectiveSentimentRetrofit,
                                                     x0=self.initalVal(),
-                                                    approx_grad=True,
+                                                    fprime=grad(self.objectiveSentimentRetrofit),
                                                     pgtol=1e-3, disp=True)
         print 'minimization done.'
         newVec = self.optimLBFGS[0][self.dim + 1:].reshape((len(self.word2indx), self.dim))
