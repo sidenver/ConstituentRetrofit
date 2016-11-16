@@ -91,7 +91,7 @@ class SentimentRetrofit(object):
                                                     fprime=grad(self.objectiveSentimentRetrofit),
                                                     pgtol=1e-3, disp=True)
         print 'minimization done.'
-        newVec = self.optimLBFGS[0][self.dim + 1:].reshape((len(self.word2indx), self.dim))
+        newVec = self.optimLBFGS[0][1]
         self.newVectors = {}
         indx2word = {self.word2indx[word]: word for word in self.word2indx}
         for indx in range(len(self.word2indx)):
