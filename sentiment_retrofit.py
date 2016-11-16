@@ -41,7 +41,9 @@ class SentimentRetrofit(object):
 
     def loadDocument(self, directory, polarity):
         print 'loading document at ' + directory
-        for filename in os.listdir(directory):
+        for idx, filename in enumerate(os.listdir(directory)):
+            if idx > 5000:
+                break
             if filename.split('.')[-1] == "txt":
                 if filename.split('.')[0] not in self.docummentDict:
                     # {word_index: freq}
@@ -61,7 +63,7 @@ class SentimentRetrofit(object):
         return bow
 
     def initalVal(self):
-        return np.empty(self.dim + 1 + len(self.word2indx) * self.dim)
+        return np.zeros(self.dim + 1 + len(self.word2indx) * self.dim)
 
     def objectiveSentimentRetrofit(self, param):
         phi = param[:self.dim + 1]
