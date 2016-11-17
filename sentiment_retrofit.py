@@ -1,21 +1,22 @@
 # load required libraries
-import autograd.numpy as np
-from autograd import grad
+import numpy as np
 from numpy import linalg as la
 import scipy as sp
 import scipy.optimize
 import os
 from nltk.tokenize import RegexpTokenizer
 import re
+from collections import Counter
 
 
 class SentimentRetrofit(object):
-    def __init__(self, vectors=None, dim=300, lambDa=0.05):
+    def __init__(self, vectors=None, dim=300, lambDa=0.2):
         self.vectors = vectors
         self.dim = dim
         self.lambDa = lambDa
         # {name: (pos or neg, {word_index: freq)}
-        self.docummentDict = {}
+        self.docummentDictPos = Counter()
+        self.docummentDictNeg = Counter()
         self.word2indx = {}
         self.tokenizer = RegexpTokenizer(r"[\w'-]+")
 
@@ -46,21 +47,21 @@ class SentimentRetrofit(object):
             if idx > 5000:
                 break
             if filename.split('.')[-1] == "txt":
-                if filename.split('.')[0] not in self.docummentDict:
-                    # {word_index: freq}
-                    with open(directory + filename, 'r') as file:
-                        bow = self.convertDocument2Bow(file.read())
-                        self.docummentDict[filename.split('.')[0]] = (polarity, bow)
+                # {word_index: freq}
+                with open(directory + filename, 'r') as file:
+                    bow = self.convertDocument2Bow(file.read())
+                    if polarity == 'pos':
+                        self.docummentDictPos.update(bow)
+                    else:
+                        self.docummentDictNeg.update(bow)
 
     def convertDocument2Bow(self, line):
         tokenList = self.tokenizer.tokenize(line.lower())
-        bow = {}
+        bow = Counter()
         for token in tokenList:
             if token in self.word2indx:
-                if self.word2indx[token] in bow:
-                    bow[self.word2indx[token]] += 1
-                else:
-                    bow[self.word2indx[token]] = 1
+                bow[self.word2indx[token]] += 1
+
         return bow
 
     def initalVal(self):
@@ -71,24 +72,42 @@ class SentimentRetrofit(object):
         retroVec = param[self.dim + 1:].reshape((len(self.word2indx), self.dim))
         # {name: (pos or neg, {word_index: freq)}
         score = 0.0
-        for document in self.docummentDict:
-            polarity = self.docummentDict[document][0]
-            bow = self.docummentDict[document][1]
-            if polarity == 1:
-                for word in bow:
-                    score += np.log(1.0 + np.exp(-np.dot(phi, np.append(retroVec[word], 1.0)))) * bow[word]
-            else:
-                for word in bow:
-                    score += np.log(1.0 + np.exp(np.dot(phi, np.append(retroVec[word], 1.0)))) * bow[word]
+        bow = self.docummentDictPos
+        for wordId in bow:
+            score += np.log(1.0 + np.exp(-np.dot(phi, np.append(retroVec[wordId], 1.0)))) * bow[wordId]
+        bow = self.docummentDictNeg
+        for wordId in bow:
+            score += np.log(1.0 + np.exp(np.dot(phi, np.append(retroVec[wordId], 1.0)))) * bow[wordId]
 
         score += self.lambDa * la.norm(retroVec - self.originalVec)**2
         return score
+
+    def word2grad(self, size, phi, vec, wordId):
+        grad = np.zeros(size)
+        np.put(grad, np.arange(vec.size + 1), np.append(vec, 1.0))
+        start = self.dim + 1 + wordId * self.dim
+        np.put(grad, np.arange(start, start + self.dim), phi[:-1])
+        return grad
+
+    def gradient(self, param):
+        phi = param[:self.dim + 1]
+        retroVec = param[self.dim + 1:].reshape((len(self.word2indx), self.dim))
+        grad = np.zeros(param.size)
+        bow = self.docummentDictPos
+        for wordId in bow:
+            grad += -self.word2grad(param.size, phi, retroVec[wordId], wordId) / np.log(1.0 + np.exp(np.dot(phi, np.append(retroVec[wordId], 1.0)))) * bow[wordId]
+        bow = self.docummentDictNeg
+        for wordId in bow:
+            grad += self.word2grad(param.size, phi, retroVec[wordId], wordId) / np.log(1.0 + np.exp(-np.dot(phi, np.append(retroVec[wordId], 1.0)))) * bow[wordId]
+
+        grad += 2 * self.lambDa * np.append(np.zeros(self.dim + 1), (retroVec - self.originalVec).reshape(len(self.word2indx)*self.dim))
+        return grad
 
     def minimize(self):
         print 'Start minimization...'
         self.optimLBFGS = sp.optimize.fmin_l_bfgs_b(self.objectiveSentimentRetrofit,
                                                     x0=self.initalVal(),
-                                                    fprime=grad(self.objectiveSentimentRetrofit),
+                                                    fprime=self.gradient,
                                                     pgtol=1e-3, disp=True)
         print 'minimization done.'
         newVec = self.optimLBFGS[0][self.dim + 1:].reshape((len(self.word2indx), self.dim))
@@ -101,6 +120,7 @@ class SentimentRetrofit(object):
         print self.optimLBFGS[1:]
 
     def writeWordVectors(self, outputFile):
+        print 'writing to file...'
         with open(outputFile, 'w') as output:
             for vocab in self.newVectors:
                 output.write(vocab)
@@ -114,7 +134,7 @@ class SentimentRetrofit(object):
 if __name__ == '__main__':
     retrofitter = SentimentRetrofit()
     retrofitter.loadVocab('./aclImdb/imdb.vocab')
-    retrofitter.loadDocument('./aclImdb/train/pos/', 1)
-    retrofitter.loadDocument('./aclImdb/train/neg/', -1)
+    retrofitter.loadDocument('./aclImdb/train/pos/', 'pos')
+    retrofitter.loadDocument('./aclImdb/train/neg/', 'neg')
     retrofitter.minimize()
     retrofitter.writeWordVectors('./output/sentimentVec.txt')
