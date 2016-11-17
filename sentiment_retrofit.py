@@ -95,10 +95,10 @@ class SentimentRetrofit(object):
         grad = np.zeros(param.size)
         bow = self.docummentDictPos
         for wordId in bow:
-            grad += -self.word2grad(param.size, phi, retroVec[wordId], wordId) / np.log(1.0 + np.exp(np.dot(phi, np.append(retroVec[wordId], 1.0)))) * bow[wordId]
+            grad += -self.word2grad(param.size, phi, retroVec[wordId], wordId) / (1.0 + np.exp(np.dot(phi, np.append(retroVec[wordId], 1.0)))) * bow[wordId]
         bow = self.docummentDictNeg
         for wordId in bow:
-            grad += self.word2grad(param.size, phi, retroVec[wordId], wordId) / np.log(1.0 + np.exp(-np.dot(phi, np.append(retroVec[wordId], 1.0)))) * bow[wordId]
+            grad += self.word2grad(param.size, phi, retroVec[wordId], wordId) / (1.0 + np.exp(-np.dot(phi, np.append(retroVec[wordId], 1.0)))) * bow[wordId]
 
         grad += 2 * self.lambDa * np.append(np.zeros(self.dim + 1), (retroVec - self.originalVec).reshape(len(self.word2indx)*self.dim))
         return grad
