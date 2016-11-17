@@ -10,7 +10,7 @@ from collections import Counter
 
 
 class SentimentRetrofit(object):
-    def __init__(self, vectors=None, dim=300, lambDa=0.2):
+    def __init__(self, vectors=None, dim=3, lambDa=0.2):
         self.vectors = vectors
         self.dim = dim
         self.lambDa = lambDa
