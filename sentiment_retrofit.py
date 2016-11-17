@@ -10,7 +10,7 @@ from collections import Counter
 
 
 class SentimentRetrofit(object):
-    def __init__(self, vectors=None, dim=3, lambDa=0.2):
+    def __init__(self, vectors=None, dim=3, lambDa=0.001):
         self.vectors = vectors
         self.dim = dim
         self.lambDa = lambDa
@@ -121,11 +121,13 @@ class SentimentRetrofit(object):
 
     def writeWordVectors(self, outputFile):
         print 'writing to file...'
+        indx2word = {self.word2indx[word]: word for word in self.word2indx}
         with open(outputFile, 'w') as output:
-            for vocab in self.newVectors:
+            for index in range(len(indx2word)):
+                vocab = indx2word[index]
                 output.write(vocab)
                 npVec = self.newVectors[vocab]
-                vecStr = np.array2string(npVec, max_line_width='infty', precision=6, suppress_small=True)
+                vecStr = np.array2string(npVec, max_line_width='infty', precision=6, suppress_small=False)
                 vecStr = vecStr.replace('[', ' ')
                 vecStr = re.sub(r' +', ' ', vecStr)
                 output.write(vecStr[:-1])
