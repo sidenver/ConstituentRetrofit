@@ -1,4 +1,4 @@
 wget -O /fs/clip-scratch/shing/UMBC-webbase-corpus.tar.gz 'http://ebiquity.umbc.edu/redirect/to/resource/id/351/UMBC-webbase-corpus'
-tar -xvzf UMBC-webbase-corpus.tar.gz
+nohup tar -xvzf /fs/clip-scratch/shing/UMBC-webbase-corpus.tar.gz > extractLog &
 nohup python -u generatePhrases.py > phraseLog &
 nohup python -u trainWord2VecUncompress.py > sgWordPhraseLog &
