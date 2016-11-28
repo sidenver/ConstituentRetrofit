@@ -10,13 +10,13 @@ from collections import Counter
 
 
 class SentimentRetrofit(object):
-    def __init__(self, vectors=None, dim=3, lambDa=0.001):
+    def __init__(self, vectors=None, dim=50, lambDa=0.05):
         self.vectors = vectors
         self.dim = dim
         self.lambDa = lambDa
         # {name: (pos or neg, {word_index: freq)}
-        self.docummentDictPos = Counter()
-        self.docummentDictNeg = Counter()
+        self.documentDictPos = Counter()
+        self.documentDictNeg = Counter()
         self.word2indx = {}
         self.tokenizer = RegexpTokenizer(r"[\w'-]+")
 
@@ -26,7 +26,7 @@ class SentimentRetrofit(object):
             lineCount = 0
             for line in vocabFile:
                 token = line.strip(' \n')
-                if token not in self.word2indx and (self.vectors is None or token in self.vectors):
+                if len(token) > 0 and token not in self.word2indx and (self.vectors is None or token in self.vectors):
                     self.word2indx[token] = lineCount
                     lineCount += 1
 
@@ -44,16 +44,16 @@ class SentimentRetrofit(object):
     def loadDocument(self, directory, polarity):
         print 'loading document at ' + directory
         for idx, filename in enumerate(os.listdir(directory)):
-            if idx > 5000:
+            if idx > 50:
                 break
             if filename.split('.')[-1] == "txt":
                 # {word_index: freq}
                 with open(directory + filename, 'r') as file:
                     bow = self.convertDocument2Bow(file.read())
                     if polarity == 'pos':
-                        self.docummentDictPos.update(bow)
+                        self.documentDictPos.update(bow)
                     else:
-                        self.docummentDictNeg.update(bow)
+                        self.documentDictNeg.update(bow)
 
     def convertDocument2Bow(self, line):
         tokenList = self.tokenizer.tokenize(line.lower())
@@ -65,17 +65,32 @@ class SentimentRetrofit(object):
         return bow
 
     def initalVal(self):
-        return np.zeros(self.dim + 1 + len(self.word2indx) * self.dim)
+        initialVec = self.makeRandVector(self.dim + 1)
+        for indx in range(len(self.word2indx)):
+            vec = self.makeRandVector(self.dim)
+            initialVec = np.append(initialVec, vec)
+        return initialVec
+
+    def makeRandVector(self, dims):
+        mu, sigma = 0, 1
+        vec = np.random.normal(mu, sigma, dims)
+        return self.normalize(vec)
+
+    def normalize(self, v):
+        norm = np.linalg.norm(v)
+        if norm == 0:
+            return v
+        return v/norm
 
     def objectiveSentimentRetrofit(self, param):
         phi = param[:self.dim + 1]
         retroVec = param[self.dim + 1:].reshape((len(self.word2indx), self.dim))
         # {name: (pos or neg, {word_index: freq)}
         score = 0.0
-        bow = self.docummentDictPos
+        bow = self.documentDictPos
         for wordId in bow:
             score += np.log(1.0 + np.exp(-np.dot(phi, np.append(retroVec[wordId], 1.0)))) * bow[wordId]
-        bow = self.docummentDictNeg
+        bow = self.documentDictNeg
         for wordId in bow:
             score += np.log(1.0 + np.exp(np.dot(phi, np.append(retroVec[wordId], 1.0)))) * bow[wordId]
 
@@ -93,10 +108,10 @@ class SentimentRetrofit(object):
         phi = param[:self.dim + 1]
         retroVec = param[self.dim + 1:].reshape((len(self.word2indx), self.dim))
         grad = np.zeros(param.size)
-        bow = self.docummentDictPos
+        bow = self.documentDictPos
         for wordId in bow:
             grad += -self.word2grad(param.size, phi, retroVec[wordId], wordId) / (1.0 + np.exp(np.dot(phi, np.append(retroVec[wordId], 1.0)))) * bow[wordId]
-        bow = self.docummentDictNeg
+        bow = self.documentDictNeg
         for wordId in bow:
             grad += self.word2grad(param.size, phi, retroVec[wordId], wordId) / (1.0 + np.exp(-np.dot(phi, np.append(retroVec[wordId], 1.0)))) * bow[wordId]
 
@@ -127,7 +142,7 @@ class SentimentRetrofit(object):
                 vocab = indx2word[index]
                 output.write(vocab)
                 npVec = self.newVectors[vocab]
-                vecStr = np.array2string(npVec, max_line_width='infty', precision=6, suppress_small=False)
+                vecStr = np.array2string(npVec, max_line_width='infty', precision=8)
                 vecStr = vecStr.replace('[', ' ')
                 vecStr = re.sub(r' +', ' ', vecStr)
                 output.write(vecStr[:-1])
@@ -135,8 +150,14 @@ class SentimentRetrofit(object):
 
 if __name__ == '__main__':
     retrofitter = SentimentRetrofit()
-    retrofitter.loadVocab('./aclImdb/imdb.vocab')
+    retrofitter.loadVocab('./aclImdb/imdb50.vocab')
     retrofitter.loadDocument('./aclImdb/train/pos/', 'pos')
     retrofitter.loadDocument('./aclImdb/train/neg/', 'neg')
     retrofitter.minimize()
     retrofitter.writeWordVectors('./output/sentimentVec.txt')
+
+    # retrofitter.loadVocab('./aclImdb/imdbTest.vocab')
+    # retrofitter.loadDocument('./aclImdb/train/testRunPos/', 'pos')
+    # retrofitter.loadDocument('./aclImdb/train/testRunNeg/', 'neg')
+    # retrofitter.minimize()
+    # retrofitter.writeWordVectors('./output/sentimentVec.txt')
