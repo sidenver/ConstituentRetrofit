@@ -31,6 +31,11 @@ class VocabBuilder(object):
             for token, count in self.wordCounter.most_common():
                 output.write(token+'\n')
 
+    def outputRandomWord2Vec(self, outFile):
+        with open(outFile, 'w') as output:
+            for token, count in self.wordCounter.most_common():
+                output.write(token+'\n')
+
 if __name__ == '__main__':
     vocabBuilder = VocabBuilder()
     inputDirs = ['./aclImdb/train/pos/', './aclImdb/train/neg/']

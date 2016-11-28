@@ -5,7 +5,7 @@ import numpy as np
 import os
 
 dataPath = "/fs/clip-scratch/shing/webbase_all/"
-phraseDir = "/fs/clip-scratch/shing/"
+phraseDir = "/fs/clip-scratch/shing/phrase/"
 
 phraseCount = Counter()
 
