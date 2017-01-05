@@ -53,11 +53,12 @@ class EvaluateSentimentVec(object):
         bow = Counter()
         for token in tokenList:
             if token in self.word2vec:
-                bow[token] += 1
+                bow[token] += 1.0
 
+        total = float(sum(bow.values()))
         vec = np.zeros(self.dim)
         for word in bow:
-            vec += self.word2vec[word]*bow[word]
+            vec += self.word2vec[word]*bow[word]/total
 
         return vec
 
@@ -90,7 +91,7 @@ class EvaluateSentimentVec(object):
 
 if __name__ == '__main__':
     evaluator = EvaluateSentimentVec()
-    evaluator.loadVector('./output/sentimentVec.txt')
+    evaluator.loadVector('./output/sentimentVecSg.txt')
     # evaluator.loadVector('./aclImdb/imdbRandom.vector')
     evaluator.loadDocument('./aclImdb/test/pos/', 'pos')
     evaluator.loadDocument('./aclImdb/test/neg/', 'neg')
