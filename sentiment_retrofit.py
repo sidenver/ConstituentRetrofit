@@ -59,7 +59,7 @@ class SentimentRetrofit(object):
     def loadDocument(self, directory, polarity):
         print 'loading document at ' + directory
         for idx, filename in enumerate(os.listdir(directory)):
-            if idx > 5000:
+            if idx > 500:
                 break
             if filename.split('.')[-1] == "txt":
                 # {word_index: freq}
@@ -157,14 +157,24 @@ class SentimentRetrofit(object):
                 self.newVectors[word] = newVec[indx]
         print self.optimLBFGS[1:]
 
-    def writeWordVectors(self, outputFile):
+    def writeWordVectors(self, outputFileOld, outputFileNew):
         print 'writing to file...'
         indx2word = {self.word2indx[word]: word for word in self.word2indx}
-        with open(outputFile, 'w') as output:
+        with open(outputFileNew, 'w') as output:
             for index in range(len(indx2word)):
                 vocab = indx2word[index]
                 output.write(vocab)
                 npVec = self.newVectors[vocab]
+                vecStr = np.array2string(npVec, max_line_width='infty', precision=8)
+                vecStr = vecStr.replace('[', ' ')
+                vecStr = re.sub(r' +', ' ', vecStr)
+                output.write(vecStr[:-1])
+                output.write('\n')
+        with open(outputFileOld, 'w') as output:
+            for index in range(len(indx2word)):
+                vocab = indx2word[index]
+                output.write(vocab)
+                npVec = self.originalVec[vocab]
                 vecStr = np.array2string(npVec, max_line_width='infty', precision=8)
                 vecStr = vecStr.replace('[', ' ')
                 vecStr = re.sub(r' +', ' ', vecStr)
@@ -200,7 +210,7 @@ if __name__ == '__main__':
     # retrofitter.debug()
     # retrofitter.checkGrad()
     retrofitter.minimize()
-    retrofitter.writeWordVectors('./output/sentimentVecSg.txt')
+    retrofitter.writeWordVectors('./output/sentimentVecSgOld.txt', './output/sentimentVecSgNew.txt')
 
     # retrofitter.loadVocab('./aclImdb/imdbTest.vocab')
     # retrofitter.loadDocument('./aclImdb/train/testRunPos/', 'pos')
