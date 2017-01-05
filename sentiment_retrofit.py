@@ -59,7 +59,7 @@ class SentimentRetrofit(object):
     def loadDocument(self, directory, polarity):
         print 'loading document at ' + directory
         for idx, filename in enumerate(os.listdir(directory)):
-            if idx > 500:
+            if idx > 50:
                 break
             if filename.split('.')[-1] == "txt":
                 # {word_index: freq}

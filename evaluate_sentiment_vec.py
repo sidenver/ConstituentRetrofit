@@ -48,6 +48,12 @@ class EvaluateSentimentVec(object):
                     else:
                         self.documentNeg.append(vec)
 
+    def normalize(self, v):
+        norm = np.linalg.norm(v)
+        if norm == 0:
+            return v
+        return v / norm
+
     def convertDocument2Vec(self, line):
         tokenList = self.tokenizer.tokenize(line.lower())
         bow = Counter()
@@ -55,10 +61,10 @@ class EvaluateSentimentVec(object):
             if token in self.word2vec:
                 bow[token] += 1.0
 
-        total = float(sum(bow.values()))
         vec = np.zeros(self.dim)
         for word in bow:
-            vec += self.word2vec[word]*bow[word]/total
+            vec += self.word2vec[word] * bow[word]
+        vec = self.normalize(vec)
 
         return vec
 
@@ -74,10 +80,10 @@ class EvaluateSentimentVec(object):
             self.x.append(neg)
 
     def getTrainSample(self):
-        return self.y[:self.totalCount/2], self.x[:self.totalCount/2]
+        return self.y[:self.totalCount / 2], self.x[:self.totalCount / 2]
 
     def getTestSample(self):
-        return self.y[self.totalCount/2:], self.x[self.totalCount/2:]
+        return self.y[self.totalCount / 2:], self.x[self.totalCount / 2:]
 
     def train(self):
         print 'training...'
