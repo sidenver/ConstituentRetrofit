@@ -22,21 +22,26 @@ class SentimentRetrofit(object):
         # {name: (pos or neg, {word_index: freq)}
         self.documentDictPos = Counter()
         self.documentDictNeg = Counter()
+        self.wordSet = set()
         self.word2indx = {}
+        self.wordNum = 0
         self.tokenizer = RegexpTokenizer(r"[\w'-]+")
 
     def loadVocab(self, fname):
         """
         load vocab in imdb
         """
-        print 'loading vocab...'
+        print 'loading imdb vocab...'
         with open(fname, 'r') as vocabFile:
-            lineCount = 0
             for line in vocabFile:
                 token = line.strip(' \n')
-                if len(token) > 0 and token not in self.word2indx and (self.vectors is None or token in self.vocab):
-                    self.word2indx[token] = lineCount
-                    lineCount += 1
+                if len(token) > 0 and token not in self.wordSet and (self.vocab is None or token in self.vocab):
+                    self.wordSet.add(token)
+
+    def buildVocab(self):
+        """
+        load vocab in imdb
+        """
 
         if self.vectors is None:
             self.originalVec = np.zeros((len(self.word2indx), self.dim))
@@ -54,7 +59,7 @@ class SentimentRetrofit(object):
     def loadDocument(self, directory, polarity):
         print 'loading document at ' + directory
         for idx, filename in enumerate(os.listdir(directory)):
-            if idx > 500:
+            if idx > 1:
                 break
             if filename.split('.')[-1] == "txt":
                 # {word_index: freq}
@@ -71,6 +76,9 @@ class SentimentRetrofit(object):
         for token in tokenList:
             if token in self.word2indx:
                 bow[self.word2indx[token]] += 1
+            elif token in self.wordSet:
+                self.word2indx[token] = self.wordNum
+                self.wordNum += 1
 
         return bow
 
@@ -163,28 +171,36 @@ class SentimentRetrofit(object):
                 output.write(vecStr[:-1])
                 output.write('\n')
 
+    def debug(self):
+        for word in self.word2indx:
+            print word
+
     def checkGrad(self):
-        for i in range(100):
-            print scipy.optimize.check_grad(func=self.objectiveSentimentRetrofit, grad=self.gradient, x0=self.initalVal())
+        print 'start checking'
+        initialVec = self.initalVal()
+        print 'initialized', initialVec
+        print scipy.optimize.check_grad(func=self.objectiveSentimentRetrofit, grad=self.gradient, x0=initialVec)
 
 if __name__ == '__main__':
-    # sys.stderr.write('Reading vectors from file...\n')
+    sys.stderr.write('Reading vectors from file...\n')
 
-    # model = word2vec.Word2Vec.load(w2vDir)
-    # vectorDim = len(model[model.vocab.iterkeys().next()])
-    # wordVectors = model
-    # sys.stderr.write('Loaded vectors from file...\n')
-    # vocab = {word: model.vocab[word].index for word in model.vocab}
-    # sys.stderr.write('Finished reading vectors.\n')
+    model = word2vec.Word2Vec.load(w2vDir)
+    vectorDim = len(model[model.vocab.iterkeys().next()])
+    wordVectors = model
+    sys.stderr.write('Loaded vectors from file...\n')
+    vocab = {word: model.vocab[word].index for word in model.vocab}
+    sys.stderr.write('Finished reading vectors.\n')
 
-    # retrofitter = SentimentRetrofit(vectors=wordVectors, vocab=vocab, dim=vectorDim)
-    retrofitter = SentimentRetrofit()
-    retrofitter.loadVocab('./aclImdb/imdb50.vocab')
+    retrofitter = SentimentRetrofit(vectors=wordVectors, vocab=vocab, dim=vectorDim)
+    # retrofitter = SentimentRetrofit()
+    retrofitter.loadVocab('./aclImdb/imdb.vocab')
     retrofitter.loadDocument('./aclImdb/train/pos/', 'pos')
     retrofitter.loadDocument('./aclImdb/train/neg/', 'neg')
-    retrofitter.checkGrad()
-    # retrofitter.minimize()
-    # retrofitter.writeWordVectors('./output/sentimentVec.txt')
+    retrofitter.buildVocab()
+    # retrofitter.debug()
+    # retrofitter.checkGrad()
+    retrofitter.minimize()
+    retrofitter.writeWordVectors('./output/sentimentVecSg.txt')
 
     # retrofitter.loadVocab('./aclImdb/imdbTest.vocab')
     # retrofitter.loadDocument('./aclImdb/train/testRunPos/', 'pos')
