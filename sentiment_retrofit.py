@@ -7,11 +7,16 @@ import os
 from nltk.tokenize import RegexpTokenizer
 import re
 from collections import Counter
+from gensim.models import word2vec
+import sys
+
+w2vDir = '/fs/clip-scratch/shing/output/sgWordPhrase'
 
 
 class SentimentRetrofit(object):
-    def __init__(self, vectors=None, dim=50, lambDa=0.05):
+    def __init__(self, vectors=None, vocab=None, dim=50, lambDa=0.05):
         self.vectors = vectors
+        self.vocab = vocab
         self.dim = dim
         self.lambDa = lambDa
         # {name: (pos or neg, {word_index: freq)}
@@ -21,12 +26,15 @@ class SentimentRetrofit(object):
         self.tokenizer = RegexpTokenizer(r"[\w'-]+")
 
     def loadVocab(self, fname):
+        """
+        load vocab in imdb
+        """
         print 'loading vocab...'
         with open(fname, 'r') as vocabFile:
             lineCount = 0
             for line in vocabFile:
                 token = line.strip(' \n')
-                if len(token) > 0 and token not in self.word2indx and (self.vectors is None or token in self.vectors):
+                if len(token) > 0 and token not in self.word2indx and (self.vectors is None or token in self.vocab):
                     self.word2indx[token] = lineCount
                     lineCount += 1
 
@@ -41,10 +49,12 @@ class SentimentRetrofit(object):
                 self.originalVec = np.append(self.originalVec, vec)
             self.originalVec = self.originalVec.reshape((len(self.word2indx), self.dim))
 
+        print 'original vec is of dimension:', self.originalVec.shape
+
     def loadDocument(self, directory, polarity):
         print 'loading document at ' + directory
         for idx, filename in enumerate(os.listdir(directory)):
-            if idx > 50:
+            if idx > 500:
                 break
             if filename.split('.')[-1] == "txt":
                 # {word_index: freq}
@@ -65,9 +75,14 @@ class SentimentRetrofit(object):
         return bow
 
     def initalVal(self):
-        initialVec = self.makeRandVector(self.dim + 1)
-        for indx in range(len(self.word2indx)):
-            vec = self.makeRandVector(self.dim)
+        if not self.vectors:
+            initialVec = self.makeRandVector(self.dim + 1)
+            for indx in range(len(self.word2indx)):
+                vec = self.makeRandVector(self.dim)
+                initialVec = np.append(initialVec, vec)
+        else:
+            initialVec = self.makeRandVector(self.dim + 1)
+            vec = self.originalVec.reshape(len(self.word2indx)*self.dim)
             initialVec = np.append(initialVec, vec)
         return initialVec
 
@@ -148,13 +163,28 @@ class SentimentRetrofit(object):
                 output.write(vecStr[:-1])
                 output.write('\n')
 
+    def checkGrad(self):
+        for i in range(100):
+            print scipy.optimize.check_grad(func=self.objectiveSentimentRetrofit, grad=self.gradient, x0=self.initalVal())
+
 if __name__ == '__main__':
+    # sys.stderr.write('Reading vectors from file...\n')
+
+    # model = word2vec.Word2Vec.load(w2vDir)
+    # vectorDim = len(model[model.vocab.iterkeys().next()])
+    # wordVectors = model
+    # sys.stderr.write('Loaded vectors from file...\n')
+    # vocab = {word: model.vocab[word].index for word in model.vocab}
+    # sys.stderr.write('Finished reading vectors.\n')
+
+    # retrofitter = SentimentRetrofit(vectors=wordVectors, vocab=vocab, dim=vectorDim)
     retrofitter = SentimentRetrofit()
     retrofitter.loadVocab('./aclImdb/imdb50.vocab')
     retrofitter.loadDocument('./aclImdb/train/pos/', 'pos')
     retrofitter.loadDocument('./aclImdb/train/neg/', 'neg')
-    retrofitter.minimize()
-    retrofitter.writeWordVectors('./output/sentimentVec.txt')
+    retrofitter.checkGrad()
+    # retrofitter.minimize()
+    # retrofitter.writeWordVectors('./output/sentimentVec.txt')
 
     # retrofitter.loadVocab('./aclImdb/imdbTest.vocab')
     # retrofitter.loadDocument('./aclImdb/train/testRunPos/', 'pos')
