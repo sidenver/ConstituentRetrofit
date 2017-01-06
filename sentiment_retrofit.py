@@ -174,7 +174,7 @@ class SentimentRetrofit(object):
             for index in range(len(indx2word)):
                 vocab = indx2word[index]
                 output.write(vocab)
-                npVec = self.originalVec[vocab]
+                npVec = self.originalVec[index]
                 vecStr = np.array2string(npVec, max_line_width='infty', precision=8)
                 vecStr = vecStr.replace('[', ' ')
                 vecStr = re.sub(r' +', ' ', vecStr)
