@@ -98,7 +98,7 @@ class EvaluateSentimentVec(object):
         return self.lin_clf.score(x, y)
 
     def showModel(self):
-        print self.lin_clf.coef_
+        print self.lin_clf.coef_[0], len(self.lin_clf.coef_[0])
 
 if __name__ == '__main__':
     evaluator = EvaluateSentimentVec()
