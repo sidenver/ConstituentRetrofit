@@ -1,6 +1,7 @@
 # load required libraries
 import numpy as np
 from numpy import linalg as la
+from sklearn import linear_model
 import scipy as sp
 import scipy.optimize
 import os
@@ -22,6 +23,9 @@ class SentimentRetrofit(object):
         # {name: (pos or neg, {word_index: freq)}
         self.documentDictPos = Counter()
         self.documentDictNeg = Counter()
+        self.lin_clf = linear_model.LogisticRegression()
+        self.posX = []
+        self.negX = []
         self.wordSet = set()
         self.word2indx = {}
         self.wordNum = 0
@@ -59,16 +63,23 @@ class SentimentRetrofit(object):
     def loadDocument(self, directory, polarity):
         print 'loading document at ' + directory
         for idx, filename in enumerate(os.listdir(directory)):
-            if idx > 100:
+            if idx > 5:
                 break
             if filename.split('.')[-1] == "txt":
                 # {word_index: freq}
                 with open(directory + filename, 'r') as file:
-                    bow = self.convertDocument2Bow(file.read())
+                    line = file.read()
+                    bow = self.convertDocument2Bow(line)
+                    if self.vectors:
+                        vec = self.convertDocument2Vec(line)
                     if polarity == 'pos':
                         self.documentDictPos.update(bow)
+                        if self.vectors:
+                            self.posX.append(vec)
                     else:
                         self.documentDictNeg.update(bow)
+                        if self.vectors:
+                            self.negX.append(vec)
 
     def convertDocument2Bow(self, line):
         tokenList = self.tokenizer.tokenize(line.lower())
@@ -82,6 +93,38 @@ class SentimentRetrofit(object):
 
         return bow
 
+    def convertDocument2Vec(self, line):
+        tokenList = self.tokenizer.tokenize(line.lower())
+        bow = Counter()
+        for token in tokenList:
+            if token in self.vocab:
+                bow[token] += 1.0
+
+        vec = np.zeros(self.dim)
+        for word in bow:
+            vec += self.vectors[word] * bow[word]
+        vec = self.normalize(vec)
+
+        return vec
+
+    def generateSample(self):
+        print 'generating samples...'
+        self.x = []
+        self.y = []
+        for pos, neg in zip(self.posX, self.negX):
+            self.y.append(1)
+            self.x.append(pos)
+            self.y.append(0)
+            self.x.append(neg)
+
+    def train(self):
+        print 'training...'
+        self.lin_clf.fit(self.x, self.y)
+
+    def regresserParam(self):
+        self.train()
+        return np.append(self.lin_clf.coef_[0], [1.0])
+
     def initalVal(self):
         if not self.vectors:
             initialVec = self.makeRandVector(self.dim + 1)
@@ -89,7 +132,7 @@ class SentimentRetrofit(object):
                 vec = self.makeRandVector(self.dim)
                 initialVec = np.append(initialVec, vec)
         else:
-            initialVec = self.makeRandVector(self.dim + 1)
+            initialVec = self.regresserParam()
             vec = self.originalVec.reshape(len(self.word2indx)*self.dim)
             initialVec = np.append(initialVec, vec)
         return initialVec
