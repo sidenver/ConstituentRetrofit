@@ -1,5 +1,5 @@
-# from sklearn import svm
-from sklearn import linear_model
+from sklearn import svm
+# from sklearn import linear_model
 import numpy as np
 import os
 from nltk.tokenize import RegexpTokenizer
@@ -9,7 +9,8 @@ import sys
 
 class EvaluateSentimentVec(object):
     def __init__(self):
-        self.lin_clf = linear_model.LogisticRegression()
+        # self.lin_clf = linear_model.LogisticRegression()
+        self.lin_clf = svm.LinearSVC()
         self.tokenizer = RegexpTokenizer(r"[\w'-]+")
         self.word2vec = {}
         self.dim = 0
