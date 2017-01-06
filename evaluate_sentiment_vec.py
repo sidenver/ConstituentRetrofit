@@ -4,6 +4,7 @@ import numpy as np
 import os
 from nltk.tokenize import RegexpTokenizer
 from collections import Counter
+import sys
 
 
 class EvaluateSentimentVec(object):
@@ -97,7 +98,7 @@ class EvaluateSentimentVec(object):
 
 if __name__ == '__main__':
     evaluator = EvaluateSentimentVec()
-    evaluator.loadVector('./output/sentimentVecSg.txt')
+    evaluator.loadVector(sys.argv[1])
     # evaluator.loadVector('./aclImdb/imdbRandom.vector')
     evaluator.loadDocument('./aclImdb/test/pos/', 'pos')
     evaluator.loadDocument('./aclImdb/test/neg/', 'neg')
