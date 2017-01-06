@@ -1,6 +1,7 @@
 # load required libraries
 import numpy as np
-from numpy import linalg as la
+# from autograd import grad
+# from numpy import linalg as la
 from sklearn import linear_model
 import scipy as sp
 import scipy.optimize
@@ -15,7 +16,7 @@ w2vDir = '/fs/clip-scratch/shing/output/sgWordPhrase'
 
 
 class SentimentRetrofit(object):
-    def __init__(self, vectors=None, vocab=None, dim=50, lambDa=0.05):
+    def __init__(self, vectors=None, vocab=None, dim=50, lambDa=0.5):
         self.vectors = vectors
         self.vocab = vocab
         self.dim = dim
@@ -45,7 +46,12 @@ class SentimentRetrofit(object):
     def buildVocab(self):
 
         if self.vectors is None:
-            self.originalVec = np.zeros((len(self.word2indx), self.dim))
+            # self.originalVec = np.zeros((len(self.word2indx), self.dim))
+            self.originalVec = []
+            for indx in range(len(self.word2indx)):
+                vec = self.makeRandVector(self.dim)
+                self.originalVec = np.append(self.originalVec, vec)
+            self.originalVec = self.originalVec.reshape((len(self.word2indx), self.dim))
         else:
             indx2word = {self.word2indx[word]: word for word in self.word2indx}
             self.originalVec = np.zeros(0)
@@ -60,7 +66,7 @@ class SentimentRetrofit(object):
     def loadDocument(self, directory, polarity):
         print 'loading document at ' + directory
         for idx, filename in enumerate(os.listdir(directory)):
-            if idx > 5:
+            if idx > 100:
                 break
             if filename.split('.')[-1] == "txt":
                 # {word_index: freq}
@@ -124,14 +130,20 @@ class SentimentRetrofit(object):
         return np.append(self.lin_clf.coef_[0], [1.0])
 
     def initalVal(self):
+        smallRand = []
+        for indx in range(len(self.word2indx)):
+                vec = self.makeSmallRandVector(self.dim)
+                smallRand = np.append(smallRand, vec)
+
         if not self.vectors:
             initialVec = self.makeRandVector(self.dim + 1)
-            for indx in range(len(self.word2indx)):
-                vec = self.makeRandVector(self.dim)
-                initialVec = np.append(initialVec, vec)
+            # for indx in range(len(self.word2indx)):
+            #     vec = self.makeRandVector(self.dim)
+            #     initialVec = np.append(initialVec, vec)
+            initialVec = np.append(initialVec, self.originalVec.reshape(len(self.word2indx)*self.dim)+smallRand)
         else:
             initialVec = self.regresserParam()
-            vec = self.originalVec.reshape(len(self.word2indx)*self.dim)
+            vec = self.originalVec.reshape(len(self.word2indx)*self.dim) + smallRand
             initialVec = np.append(initialVec, vec)
         return initialVec
 
@@ -139,6 +151,11 @@ class SentimentRetrofit(object):
         mu, sigma = 0, 1
         vec = np.random.normal(mu, sigma, dims)
         return self.normalize(vec)
+
+    def makeSmallRandVector(self, dims):
+        mu, sigma = 0, 1
+        vec = np.random.normal(mu, sigma, dims)
+        return self.normalize(vec) * 0.1
 
     def normalize(self, v):
         norm = np.linalg.norm(v)
@@ -153,17 +170,18 @@ class SentimentRetrofit(object):
         score = 0.0
         bow = self.documentDictPos
         for wordId in bow:
-            score += np.log(1.0 + np.exp(-np.dot(phi, np.append(retroVec[wordId], 1.0)))) * bow[wordId]
+            score += np.log(1.0 + np.exp(-np.dot(phi[:-1], retroVec[wordId]) - phi[-1])) * bow[wordId]
         bow = self.documentDictNeg
         for wordId in bow:
-            score += np.log(1.0 + np.exp(np.dot(phi, np.append(retroVec[wordId], 1.0)))) * bow[wordId]
+            score += np.log(1.0 + np.exp(np.dot(phi[:-1], retroVec[wordId]) + phi[-1])) * bow[wordId]
 
-        score += self.lambDa * la.norm(retroVec - self.originalVec)**2
+        score += self.lambDa * np.linalg.norm(retroVec - self.originalVec)**2
         return score
 
     def word2grad(self, size, phi, vec, wordId):
         grad = np.zeros(size)
-        np.put(grad, np.arange(vec.size + 1), np.append(vec, 1.0))
+        np.put(grad, np.arange(vec.size), vec)
+        np.put(grad, [vec.size], [1.0])
         start = self.dim + 1 + wordId * self.dim
         np.put(grad, np.arange(start, start + self.dim), phi[:-1])
         return grad
@@ -174,10 +192,10 @@ class SentimentRetrofit(object):
         grad = np.zeros(param.size)
         bow = self.documentDictPos
         for wordId in bow:
-            grad += -self.word2grad(param.size, phi, retroVec[wordId], wordId) / (1.0 + np.exp(np.dot(phi, np.append(retroVec[wordId], 1.0)))) * bow[wordId]
+            grad += -self.word2grad(param.size, phi, retroVec[wordId], wordId) / (1.0 + np.exp(np.dot(phi[:-1], retroVec[wordId]) + phi[-1])) * bow[wordId]
         bow = self.documentDictNeg
         for wordId in bow:
-            grad += self.word2grad(param.size, phi, retroVec[wordId], wordId) / (1.0 + np.exp(-np.dot(phi, np.append(retroVec[wordId], 1.0)))) * bow[wordId]
+            grad += self.word2grad(param.size, phi, retroVec[wordId], wordId) / (1.0 + np.exp(-np.dot(phi[:-1], retroVec[wordId]) - phi[-1])) * bow[wordId]
 
         grad += 2 * self.lambDa * np.append(np.zeros(self.dim + 1), (retroVec - self.originalVec).reshape(len(self.word2indx)*self.dim))
         return grad
@@ -187,7 +205,7 @@ class SentimentRetrofit(object):
         self.optimLBFGS = sp.optimize.fmin_l_bfgs_b(self.objectiveSentimentRetrofit,
                                                     x0=self.initalVal(),
                                                     fprime=self.gradient,
-                                                    pgtol=1e-3, disp=True)
+                                                    pgtol=5e-2, disp=True, maxiter=1000)
         print 'minimization done.'
         newVec = self.optimLBFGS[0][self.dim + 1:].reshape((len(self.word2indx), self.dim))
         self.newVectors = {}
@@ -251,7 +269,7 @@ if __name__ == '__main__':
     # retrofitter.debug()
     # retrofitter.checkGrad()
     retrofitter.minimize()
-    retrofitter.writeWordVectors('./output/sentimentVecTestOld.txt', './output/sentimentVecTestNew.txt')
+    retrofitter.writeWordVectors('./output/sgOld.txt', './output/sgNew.txt')
 
     # retrofitter.loadVocab('./aclImdb/imdbTest.vocab')
     # retrofitter.loadDocument('./aclImdb/train/testRunPos/', 'pos')

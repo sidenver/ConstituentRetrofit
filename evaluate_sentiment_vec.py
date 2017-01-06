@@ -108,5 +108,5 @@ if __name__ == '__main__':
     evaluator.loadDocument('./aclImdb/test/neg/', 'neg')
     evaluator.generateSample()
     evaluator.train()
-    evaluator.showModel()
+    # evaluator.showModel()
     print evaluator.test()
