@@ -119,6 +119,7 @@ class SentimentRetrofit(object):
         self.lin_clf.fit(self.x, self.y)
 
     def regresserParam(self):
+        self.generateSample()
         self.train()
         return np.append(self.lin_clf.coef_[0], [1.0])
 
