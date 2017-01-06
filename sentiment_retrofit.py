@@ -16,7 +16,7 @@ w2vDir = '/fs/clip-scratch/shing/output/sgWordPhrase'
 
 
 class SentimentRetrofit(object):
-    def __init__(self, vectors=None, vocab=None, dim=50, lambDa=0.5):
+    def __init__(self, vectors=None, vocab=None, dim=50, lambDa=0.05):
         self.vectors = vectors
         self.vocab = vocab
         self.dim = dim
