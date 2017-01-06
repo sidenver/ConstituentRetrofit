@@ -43,9 +43,6 @@ class SentimentRetrofit(object):
                     self.wordSet.add(token)
 
     def buildVocab(self):
-        """
-        load vocab in imdb
-        """
 
         if self.vectors is None:
             self.originalVec = np.zeros((len(self.word2indx), self.dim))
@@ -253,7 +250,7 @@ if __name__ == '__main__':
     # retrofitter.debug()
     # retrofitter.checkGrad()
     retrofitter.minimize()
-    retrofitter.writeWordVectors('./output/sentimentVecSgOld.txt', './output/sentimentVecSgNew.txt')
+    retrofitter.writeWordVectors('./output/sentimentVecTestOld.txt', './output/sentimentVecTestNew.txt')
 
     # retrofitter.loadVocab('./aclImdb/imdbTest.vocab')
     # retrofitter.loadDocument('./aclImdb/train/testRunPos/', 'pos')
