@@ -42,8 +42,13 @@ class SentimentRetrofit(object):
 
         if self.vectors is None:
             # self.originalVec = np.zeros((len(self.word2indx), self.dim))
-            self.originalVec = []
-            for indx in range(self.vocabSize):
+            self.documentDictTol.update(self.documentDictPos)
+            self.documentDictTol.update(self.documentDictNeg)
+            self.wordList = [word for word, freq in self.documentDictTol.most_common(self.vocabSize)]
+            self.posWeight = [self.documentDictPos[word] for word in self.wordList]
+            self.negWeight = [self.documentDictNeg[word] for word in self.wordList]
+            self.originalVec = np.zeros(0)
+            for word in self.wordList:
                 vec = self.makeRandVector(self.dim)
                 self.originalVec = np.append(self.originalVec, vec)
             self.originalVec = self.originalVec.reshape((self.vocabSize, self.dim))
