@@ -104,11 +104,11 @@ class SentimentRetrofit(object):
                           index=self.wordList)
         df.to_csv(outputFileW2V, encoding='utf-8')
 
-        # dfPos = pd.DataFrame(self.posWeight)
-        # dfPos.to_csv(outputFilePos)
+        dfPos = pd.DataFrame(self.posWeight)
+        dfPos.to_csv(outputFilePos)
 
-        # dfNeg = pd.DataFrame(self.negWeight)
-        # dfNeg.to_csv(outputFileNeg)
+        dfNeg = pd.DataFrame(self.negWeight)
+        dfNeg.to_csv(outputFileNeg)
 
 
 if __name__ == '__main__':
@@ -126,4 +126,4 @@ if __name__ == '__main__':
     retrofitter.loadDocument('./aclImdb/train/pos/', 'pos')
     retrofitter.loadDocument('./aclImdb/train/neg/', 'neg')
     retrofitter.buildVocab()
-    retrofitter.writeWordVectors('./output/random.csv', './output/posList.csv', './output/negList.csv')
+    retrofitter.writeWordVectors('./output/random.csv', './output/posRandomList.csv', './output/negRandomList.csv')
