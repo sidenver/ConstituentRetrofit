@@ -126,9 +126,9 @@ if __name__ == '__main__':
     vocab = {word: model.vocab[word].index for word in model.vocab}
     sys.stderr.write('Finished reading vectors.\n')
 
-    retrofitter = SentimentRetrofit(vocab=vocab, dim=vectorDim)
+    retrofitter = SentimentRetrofit(vocab=vocab, dim=200)
     retrofitter.loadVocab('./aclImdb/imdb.vocab')
     retrofitter.loadDocument('./aclImdb/train/pos/', 'pos')
     retrofitter.loadDocument('./aclImdb/train/neg/', 'neg')
     retrofitter.buildVocab()
-    retrofitter.writeWordVectors('./output/random.csv', './output/posRandomList.csv', './output/negRandomList.csv')
+    retrofitter.writeWordVectors('./output/random200.csv', './output/posRandom200List.csv', './output/negRandom200List.csv')

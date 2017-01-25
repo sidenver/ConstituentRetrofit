@@ -13,8 +13,8 @@ import matplotlib
 
 class EvaluateSentimentVec(object):
     def __init__(self):
-        self.lin_clf = linear_model.LogisticRegression()
-        # self.lin_clf = svm.LinearSVC()
+        # self.lin_clf = linear_model.LogisticRegression()
+        self.lin_clf = svm.LinearSVC()
         self.tokenizer = RegexpTokenizer(r"[\w'-]+")
         self.word2vec = {}
         self.dim = 0
@@ -23,7 +23,7 @@ class EvaluateSentimentVec(object):
 
     def loadVector(self, pathVec, pathWord):
         print 'loading vector...'
-        vec = np.loadtxt(open(pathVec, "rb"), delimiter=",", skiprows=1, usecols=tuple(range(1, 301)))  #
+        vec = np.loadtxt(open(pathVec, "rb"), delimiter=",")  # , skiprows=1, usecols=tuple(range(1, 301)))
         vocab = []
         with open(pathWord, 'r') as wordFile:
             for line in wordFile:
@@ -40,11 +40,7 @@ class EvaluateSentimentVec(object):
 
     def loadDocument(self, directory, polarity):
         print 'loading document at ' + directory
-        idx = 0
         for filename in os.listdir(directory):
-            if idx < 10000:
-                idx += 1
-                continue
             if filename.split('.')[-1] == "txt":
                 # {word_index: freq}
                 with open(directory + filename, 'r') as file:
@@ -86,40 +82,48 @@ class EvaluateSentimentVec(object):
             self.x.append(neg)
 
     def getTrainSample(self):
-        return self.y[:self.totalCount / 2], self.x[:self.totalCount / 2]
+        return self.y[:self.totalCount*4/5], self.x[:self.totalCount*4/5]
 
     def getTestSample(self):
-        return self.y[self.totalCount / 2:], self.x[self.totalCount / 2:]
+        return self.y[self.totalCount*4/5:], self.x[self.totalCount*4/5:]
 
     def train(self):
         print 'training...'
         y, x = self.getTrainSample()
+        print len(y), 'training samples'
         self.model = self.lin_clf.fit(x, y)
 
     def test(self):
         print 'testing...'
         y, x = self.getTestSample()
+        print len(y), 'testing samples'
         return self.lin_clf.score(x, y)
 
 if __name__ == '__main__':
-    params = []
     results = []
     for filename in os.listdir(sys.argv[1]):
-        evaluator = EvaluateSentimentVec()
-        evaluator.loadVector(sys.argv[1] + filename, sys.argv[2])
-        # evaluator.loadVector('./aclImdb/imdbRandom.vector')
-        evaluator.loadDocument('./aclImdb/train/pos/', 'pos')
-        evaluator.loadDocument('./aclImdb/train/neg/', 'neg')
-        evaluator.generateSample()
-        evaluator.train()
-        result = evaluator.test()
-        print result
-        param = float('.'.join(filename.split('_')[-1].split('.')[:-1]))
-        # result = np.random.normal(0, 1)
-        params.append(param)
-        results.append(result)
+        if filename.split('.')[-1] == 'csv':
+            evaluator = EvaluateSentimentVec()
+            evaluator.loadVector(sys.argv[1] + filename, sys.argv[2])
+            # evaluator.loadVector('./aclImdb/imdbRandom.vector')
+            evaluator.loadDocument('./aclImdb/train/pos/', 'pos')
+            evaluator.loadDocument('./aclImdb/train/neg/', 'neg')
+            evaluator.generateSample()
+            evaluator.train()
+            result = evaluator.test()
+            print result
+            param = float('.'.join(filename.split('_')[-1].split('.')[:-1]))
+            # result = np.random.normal(0, 1)
 
-    df = pd.Series(results, index=params)
+            results.append((param, result))
+
+    results = sorted(results, key=lambda x: x[0])
+    print results
+
+    y = [res[1] for res in results]
+    x = [res[0] for res in results]
+
+    df = pd.Series(y, index=x)
     matplotlib.style.use('ggplot')
     ax = df.plot()
     ax.set(xlabel='lambda',
