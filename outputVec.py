@@ -61,11 +61,11 @@ class SentimentRetrofit(object):
 
         print 'original vec is of dimension:', self.originalVec.shape
 
-    def loadDocument(self, directory, polarity):
+    def loadDocument(self, directory, polarity, trainCount):
         print 'loading document at ' + directory
         idx = 0
         for filename in os.listdir(directory):
-            if idx >= 10000:
+            if idx >= trainCount / 2:
                 break
             if filename.split('.')[-1] == "txt":
                 idx += 1
@@ -121,9 +121,14 @@ if __name__ == '__main__':
     vocab = {word: model.vocab[word].index for word in model.vocab}
     sys.stderr.write('Finished reading vectors.\n')
 
+    trainCount = int(sys.argv[1])
+    trainCountStr = sys.argv[1]
+
     retrofitter = SentimentRetrofit(vectors=wordVectors, vocab=vocab, dim=vectorDim)
     retrofitter.loadVocab('./aclImdb/imdb.vocab')
-    retrofitter.loadDocument('./aclImdb/train/pos/', 'pos')
-    retrofitter.loadDocument('./aclImdb/train/neg/', 'neg')
+    retrofitter.loadDocument('./aclImdb/train/pos/', 'pos', trainCount)
+    retrofitter.loadDocument('./aclImdb/train/neg/', 'neg', trainCount)
     retrofitter.buildVocab()
-    retrofitter.writeWordVectors('./output/w2v.csv', './output/posList.csv', './output/negList.csv')
+    retrofitter.writeWordVectors('./output/w2v{}.csv'.format(trainCountStr),
+                                 './output/pos{}List.csv'.format(trainCountStr),
+                                 './output/neg{}List.csv'.format(trainCountStr))

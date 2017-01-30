@@ -13,8 +13,8 @@ import matplotlib
 
 class EvaluateSentimentVec(object):
     def __init__(self):
-        # self.lin_clf = linear_model.LogisticRegression()
-        self.lin_clf = svm.LinearSVC()
+        self.lin_clf_reg = linear_model.LogisticRegression()
+        self.lin_clf_svm = svm.LinearSVC()
         self.tokenizer = RegexpTokenizer(r"[\w'-]+")
         self.word2vec = {}
         self.dim = 0
@@ -91,13 +91,14 @@ class EvaluateSentimentVec(object):
         print 'training...'
         y, x = self.getTrainSample()
         print len(y), 'training samples'
-        self.model = self.lin_clf.fit(x, y)
+        self.lin_clf_reg.fit(x, y)
+        self.lin_clf_svm.fit(x, y)
 
     def test(self):
         print 'testing...'
         y, x = self.getTestSample()
         print len(y), 'testing samples'
-        return self.lin_clf.score(x, y)
+        return {'reg': self.lin_clf_reg.score(x, y), 'svm': self.lin_clf_svm.score(x, y)}
 
 if __name__ == '__main__':
     results = []
@@ -120,10 +121,11 @@ if __name__ == '__main__':
     results = sorted(results, key=lambda x: x[0])
     print results
 
-    y = [res[1] for res in results]
+    regR = [res[1]['reg'] for res in results]
+    svmR = [res[1]['svm'] for res in results]
     x = [res[0] for res in results]
 
-    df = pd.Series(y, index=x)
+    df = pd.DataFrame({'svm': svmR, 'reg': regR}, index=x)
     matplotlib.style.use('ggplot')
     ax = df.plot()
     ax.set(xlabel='lambda',
