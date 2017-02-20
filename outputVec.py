@@ -8,7 +8,7 @@ from gensim.models import word2vec
 import sys
 import pandas as pd
 
-w2vDir = '/fs/clip-scratch/shing/output/sgWordPhrase'
+w2vDir = './output/sgWord/sgWordPhrase'
 
 
 class SentimentRetrofit(object):

@@ -130,7 +130,7 @@ if __name__ == '__main__':
     ax = df.plot()
     ax.set(xlabel='lambda',
            ylabel='accuracy',
-           title="lamda's effect on performance")
+           title="lambda's effect on performance")
     ax.set_xscale('log')
     # plt.show()
-    plt.savefig('params.png')
+    plt.savefig('params_random{}.png'.format('old'))
