@@ -25,13 +25,13 @@ class MySentences(object):
         for filename in self.dirList:
             if filename.split('.')[-1] == "possf2":
                 print 'processing ' + filename + '...'
-                f = open(dataPath + filename, 'r')
-                for line in f.readlines():
-                    if len(line) > 2:
-                        if self.concatenate:
-                            yield self.word2phrase(line).split(' ')
-                        else:
-                            yield self.untag(line).split(' ')
+                with open(dataPath + filename, 'r') as f:
+                    for line in f.readlines():
+                        if len(line) > 2:
+                            if self.concatenate:
+                                yield self.word2phrase(line).split(' ')
+                            else:
+                                yield self.untag(line).split(' ')
 
     def repl(self, matchobj):
         if matchobj.group(0) in self.phrases:
@@ -48,9 +48,9 @@ class MySentences(object):
 
     def loadPhrase(self, phraseDir):
         phrase = []
-        with open(phraseDir + "trainPhrase") as json_file:
+        with open(phraseDir + "trainPhraseJNN") as json_file:
             phrase = phrase + json.load(json_file)
-        with open(phraseDir + "testPhrase") as json_file:
+        with open(phraseDir + "testPhraseJNN") as json_file:
             phrase = phrase + json.load(json_file)
         return set(phrase)
 

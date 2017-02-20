@@ -7,7 +7,6 @@ import os
 dataPath = "/fs/clip-scratch/shing/webbase_all/"
 phraseDir = "/fs/clip-scratch/shing/phrase/"
 
-phraseJNNCount = Counter()
 phraseJNCount = Counter()
 phraseNNCount = Counter()
 
@@ -20,18 +19,16 @@ for filename in os.listdir(dataPath):
             phraseJNCount.update(match)
             match = re.findall(r"([-.,'@:\\/\w]+_N\w+ [-.,'@:\\/\w]+_N\w+)", content)
             phraseNNCount.update(match)
-            match = re.findall(r"([-.,'@:\\/\w]+_J\w+ [-.,'@:\\/\w]+_N\w+ [-.,'@:\\/\w]+_N\w+)", content)
-            phraseJNNCount.update(match)
 
 phraseCount = Counter()
 phraseCount.update(phraseJNCount)
 phraseCount.update(phraseNNCount)
-phraseCount.update(phraseJNNCount)
+
 
 print phraseCount.most_common(20)
 
 mostcommon = 1000000
-trainNum = 400000
+trainNum = 300000
 testNum = 100000
 
 mostcommonPhrase = phraseCount.most_common(mostcommon)
