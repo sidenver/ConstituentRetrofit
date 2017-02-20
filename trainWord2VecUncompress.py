@@ -26,7 +26,7 @@ class MySentences(object):
             if filename.split('.')[-1] == "possf2":
                 print 'processing ' + filename + '...'
                 with open(dataPath + filename, 'r') as f:
-                    for line in f.readlines():
+                    for line in f:
                         if len(line) > 2:
                             if self.concatenate:
                                 yield self.word2phrase(line).split(' ')
@@ -40,8 +40,9 @@ class MySentences(object):
             return matchobj.group(0)
 
     def word2phrase(self, content):
-        phraseContent = re.sub(r"([-.,'@:\\/\w]+_J\w+ [-.,'@:\\/\w]+_N\w+)", self.repl, content)
-        return re.sub(r'(_)[^ |]+', '', phraseContent)
+        content = re.sub(r"([-.,'@:\\/\w]+_J\w+ [-.,'@:\\/\w]+_N\w+)", self.repl, content)
+        content = re.sub(r"([-.,'@:\\/\w]+_N\w+ [-.,'@:\\/\w]+_N\w+)", self.repl, content)
+        return re.sub(r'(_)[^ |]+', '', content)
 
     def untag(self, content):
         return re.sub(r'(_)[^ ]+', '', content)
@@ -60,4 +61,4 @@ if __name__ == '__main__':
     # np.random.shuffle(myDirList)
     sentences = MySentences(dataPath, phraseDir, concatenate=True, dirList=myDirList)  # a memory-friendly iterator
     model = gensim.models.Word2Vec(sentences, sg=1, sample=1e-5, negative=15, size=300, min_count=5, window=5, workers=multiprocessing.cpu_count())
-    model.save(savePath + 'sgWordPhrase')
+    model.save(savePath + 'sgWordPhraseJNN')
